@@ -1,1 +1,1 @@
-![Project Preview](assets/image.png)
+![alt text](image.png)
