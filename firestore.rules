@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper to check if the requesting user matches the document owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Profile & Body Representation
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Private User Body Photographs & Multi-angle Representation
+      match /bodyProfile/{docId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // User Wardrobe Clothing Items
+      match /clothing/{itemId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Generated Virtual Try-On Results & Outfit Composites
+      match /tryOnResults/{resultId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // Saved Outfits & Collections
+      match /outfits/{outfitId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+
+      // User Preferences & Categories
+      match /categories/{categoryId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+    }
+
+    // Fallback: Deny all unauthenticated or foreign access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
