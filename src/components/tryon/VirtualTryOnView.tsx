@@ -8,6 +8,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useWardrobe } from '../../context/WardrobeContext';
+import { useConnectivity } from '../../context/ConnectivityContext';
 import { STUDIO_TRYON_MODELS } from '../../data/tryOnModels';
 import { ClothingItem, VirtualTryOnResult, ClothingClassification, GeminiOutfitResult } from '../../types';
 import { ManageCategoriesModal } from '../categories/ManageCategoriesModal';
@@ -37,6 +38,7 @@ export const VirtualTryOnView: React.FC = () => {
     generateRecommendations,
     swapItemInRecommendation,
   } = useWardrobe();
+  const { isOnline } = useConnectivity();
 
   // Main screen mode: 'recommendations' (default) or 'dressing-room'
   const [mainScreenMode, setMainScreenMode] = useState<'recommendations' | 'dressing-room'>('recommendations');
@@ -97,10 +99,24 @@ export const VirtualTryOnView: React.FC = () => {
 
   // Auto-generate on first load if no recommendations exist
   useEffect(() => {
-    if (recommendations.length === 0 && !isGeneratingRecommendations) {
+    if (isOnline && recommendations.length === 0 && !isGeneratingRecommendations) {
       handleGenerateRecommendations();
     }
-  }, []);
+  }, [isOnline]);
+
+  // Auto-regenerate when connection is restored after being offline
+  const wasOfflineRef = useRef(false);
+  useEffect(() => {
+    if (isOnline && wasOfflineRef.current) {
+      wasOfflineRef.current = false;
+      if (recommendations.length === 0 && !isGeneratingRecommendations) {
+        handleGenerateRecommendations();
+      }
+    }
+    if (!isOnline) {
+      wasOfflineRef.current = true;
+    }
+  }, [isOnline, recommendations.length, isGeneratingRecommendations, handleGenerateRecommendations]);
 
   // Handle swap item in recommendation
   const handleSwapItemInRec = useCallback(
@@ -158,6 +174,8 @@ export const VirtualTryOnView: React.FC = () => {
   // Handle fit analysis from recommendation
   const handleFitAnalysis = useCallback(
     async (itemIds: string[]) => {
+      if (!isOnline) return;
+
       setTryOnItemIds(itemIds);
       setIsLoadingFitAnalysis(true);
       setShowFitAnalysis(true);
@@ -212,7 +230,7 @@ export const VirtualTryOnView: React.FC = () => {
         setIsLoadingFitAnalysis(false);
       }
     },
-    [wardrobe, modelSource, userProfile, currentStudioModel, categories, selectedCategoryId, setTryOnItemIds]
+    [wardrobe, modelSource, userProfile, currentStudioModel, categories, selectedCategoryId, setTryOnItemIds, isOnline]
   );
 
   // Handle re-evaluate fit

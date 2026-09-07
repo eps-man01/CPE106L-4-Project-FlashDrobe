@@ -2,8 +2,10 @@ import React from 'react';
 import {
   Sparkles,
   RefreshCw,
+  WifiOff,
 } from 'lucide-react';
 import { useWardrobe } from '../../context/WardrobeContext';
+import { useConnectivity } from '../../context/ConnectivityContext';
 
 interface AndroidHeaderProps {
   onOpenAddModal?: () => void;
@@ -15,6 +17,7 @@ export const AndroidHeader: React.FC<AndroidHeaderProps> = () => {
     isWeatherLoading,
     requestGPSWeather,
   } = useWardrobe();
+  const { isOnline } = useConnectivity();
 
   const getTabTitle = () => {
     switch (activeTab) {
@@ -53,6 +56,12 @@ export const AndroidHeader: React.FC<AndroidHeaderProps> = () => {
             <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.2 bg-[#f0e9df] text-[#784a2c] border border-[#ddcfbe] rounded">
               D-PWA
             </span>
+            {!isOnline && (
+              <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.2 bg-red-50 text-red-600 border border-red-200 rounded flex items-center space-x-1">
+                <WifiOff className="w-2.5 h-2.5" />
+                <span>Offline</span>
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-stone-500 font-medium -mt-0.5">{getTabTitle()}</p>
         </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   ClothingItem,
   OutfitCategory,
@@ -18,6 +18,7 @@ import {
   INITIAL_WARDROBE,
   INITIAL_USER_PROFILE,
 } from '../data/initialWardrobe';
+import { useConnectivity } from './ConnectivityContext';
 
 interface StoredAccount extends UserProfile {
   password?: string;
@@ -113,6 +114,9 @@ const STORAGE_KEYS = {
 };
 
 export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isOnline } = useConnectivity();
+  const wasOfflineRef = useRef(false);
+
   // Accounts state
   const [accounts, setAccounts] = useState<StoredAccount[]>(() => {
     try {
@@ -273,6 +277,11 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return;
     }
 
+    if (!isOnline) {
+      wasOfflineRef.current = true;
+      return;
+    }
+
     setIsWeatherLoading(true);
     try {
       const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
@@ -288,7 +297,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsWeatherLoading(false);
     }
-  }, []);
+  }, [isOnline]);
 
   // Dedicated function to query device GPS location
   const requestGPSWeather = useCallback(() => {
@@ -321,6 +330,14 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     requestGPSWeather();
   }, [requestGPSWeather]);
+
+  // Auto-retry weather when connection is restored after being offline
+  useEffect(() => {
+    if (isOnline && wasOfflineRef.current) {
+      wasOfflineRef.current = false;
+      requestGPSWeather();
+    }
+  }, [isOnline, requestGPSWeather]);
 
   // Clothing Item Operations
   const addClothingItem = (itemData: Omit<ClothingItem, 'id' | 'dateAdded' | 'wearCount'>) => {
@@ -522,6 +539,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Gemini AI Generation
   const generateAIOutfit = async (categoryId: string, notes?: string): Promise<GeminiOutfitResult | null> => {
+    if (!isOnline) return null;
+
     const targetCategory = categories.find((c) => c.id === categoryId);
     const categoryName = targetCategory ? targetCategory.name : 'Casual Wear';
 
@@ -580,6 +599,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     count: number = 3,
     notes?: string
   ): Promise<GeminiOutfitResult[]> => {
+    if (!isOnline) return [];
+
     const targetCategory = categories.find((c) => c.id === categoryId);
     const categoryName = targetCategory ? targetCategory.name : 'Casual Wear';
 
