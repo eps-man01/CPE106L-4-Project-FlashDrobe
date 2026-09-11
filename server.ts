@@ -60,7 +60,7 @@ function getGenAI(): GoogleGenAI {
       apiKey: apiKey || 'dummy-key-for-init',
       httpOptions: {
         headers: {
-          'User-Agent': 'aistudio-build',
+          'User-Agent': 'flashdrobe/1.0',
         },
       },
     });

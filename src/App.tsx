@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConnectivityProvider, useConnectivity } from './context/ConnectivityContext';
@@ -63,12 +58,29 @@ function ConnectivityGate({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
-  const { activeTab, isAuthenticated } = useWardrobe();
+  const { activeTab, isAuthenticated, isAuthLoading } = useWardrobe();
   const { isOnline } = useConnectivity();
   const device = useDeviceLayout();
 
   const isTablet = device.effectiveIsTablet;
   const isLandscape = device.effectiveOrientation === 'landscape';
+
+  // Show loading while checking auth state
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-[#f9f6f0] flex flex-col items-center justify-center">
+        <div className="bg-white border border-[#e7e2d9] rounded-3xl p-8 shadow-lg flex flex-col items-center text-center max-w-xs mx-4">
+          <Loader2 className="w-8 h-8 text-[#8c5836] animate-spin mb-3" />
+          <h2 className="text-sm font-extrabold text-stone-900 font-['Space_Grotesk']">
+            Loading Flashdrobe...
+          </h2>
+          <p className="text-[11px] text-stone-500 mt-1">
+            Setting up your wardrobe
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

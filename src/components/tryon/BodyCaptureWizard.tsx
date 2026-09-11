@@ -165,7 +165,7 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
     startCamera();
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     const profile: UserBodyProfile = {
       id: initialProfile?.id || `body_profile_${Date.now()}`,
       userId,
@@ -180,7 +180,7 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
       updatedAt: new Date().toISOString(),
     };
 
-    StorageService.saveBodyProfile(profile);
+    await StorageService.saveBodyProfile(profile);
     onProfileSaved(profile);
     stopCamera();
     onClose();

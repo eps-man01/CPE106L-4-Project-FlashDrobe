@@ -8,7 +8,6 @@ import {
   RotateCcw,
   Check,
   FolderOpen,
-  Info,
   LogOut,
   Camera,
   Upload,
@@ -40,9 +39,9 @@ export const ProfileView: React.FC = () => {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isBodyCaptureOpen, setIsBodyCaptureOpen] = useState(false);
-  const [bodyProfile, setBodyProfile] = useState<UserBodyProfile | null>(() => {
-    return StorageService.loadBodyProfile(userProfile.id);
-  });
+  const [bodyProfile, setBodyProfile] = useState<UserBodyProfile | null>(
+    StorageService.loadBodyProfile(userProfile.id)
+  );
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
   const [deleteConfirmationMessage, setDeleteConfirmationMessage] = useState<string | null>(null);
 
@@ -340,22 +339,9 @@ export const ProfileView: React.FC = () => {
         </button>
       </form>
 
-      {/* Project Background Info (Laboratory Project) */}
-      <div className="bg-white border border-[#e7e2d9] rounded-3xl p-4 text-xs text-stone-600 space-y-2 shadow-xs">
-        <div className="flex items-center space-x-1.5 text-stone-900 font-bold">
-          <Info className="w-4 h-4 text-[#8c5836]" />
-          <span>About Flashdrobe D-PWA</span>
-        </div>
-        <p className="text-[11px] leading-relaxed text-stone-600">
-          Course: <strong className="text-stone-800">CPE106L-4 Software Design Laboratory</strong>
-          <br />
-          Team: <strong className="text-stone-800">Del Rosario, Malaybalay, Sunga, Velasco</strong>
-        </p>
-        <p className="text-[11px] leading-relaxed text-stone-500">
-          Digital personalized wardrobe application with real-time GPS weather integration and AI outfit styling.
-        </p>
-
-        <div className="pt-2 border-t border-[#e7e2d9] flex justify-between items-center">
+      {/* Reset Data */}
+      <div className="bg-white border border-[#e7e2d9] rounded-3xl p-4 text-xs text-stone-600 shadow-xs">
+        <div className="flex justify-between items-center">
           <span className="text-[10px] text-stone-400">Need a fresh start?</span>
           <button
             type="button"

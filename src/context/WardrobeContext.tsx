@@ -1,49 +1,33 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
 import {
   ClothingItem,
   OutfitCategory,
   Outfit,
   WeatherData,
   UserProfile,
-  ClothingClassification,
-  BiologicalSex,
-  BodyTypeInfo,
   ActiveTab,
   DeviceOrientationMode,
   GeminiOutfitResult,
-  RecommendationSet,
 } from '../types';
 import {
   INITIAL_CATEGORIES,
   INITIAL_WARDROBE,
   INITIAL_USER_PROFILE,
 } from '../data/initialWardrobe';
+import { FirestoreService } from '../services/FirestoreService';
 import { useConnectivity } from './ConnectivityContext';
-
-interface StoredAccount extends UserProfile {
-  password?: string;
-}
-
-const DEFAULT_ACCOUNTS: StoredAccount[] = [
-  {
-    ...INITIAL_USER_PROFILE,
-    password: 'password123',
-  },
-];
 
 interface WardrobeContextType {
   // Auth state
   isAuthenticated: boolean;
-  login: (email: string, password?: string) => { success: boolean; error?: string };
-  signup: (data: {
-    name: string;
-    email: string;
-    password?: string;
-    sex: BiologicalSex;
-    bodyType: BodyTypeInfo;
-    uploadedTryOnPhoto?: string;
-  }) => { success: boolean; error?: string };
-  logout: () => void;
+  isAuthLoading: boolean;
+  authLoading: boolean;
+  authError: string | null;
+  userId: string | null;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => Promise<void>;
   wardrobe: ClothingItem[];
   categories: OutfitCategory[];
   outfits: Outfit[];
@@ -104,79 +88,64 @@ interface WardrobeContextType {
 
 const WardrobeContext = createContext<WardrobeContextType | undefined>(undefined);
 
-const STORAGE_KEYS = {
+const LS_KEYS = {
   WARDROBE: 'flashdrobe_items_v2',
   CATEGORIES: 'flashdrobe_categories_v2',
   OUTFITS: 'flashdrobe_outfits_v2',
   USER: 'flashdrobe_user_v2',
   AUTH_SESSION: 'flashdrobe_auth_session_v2',
-  ACCOUNTS: 'flashdrobe_accounts_v2',
 };
 
 export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isOnline } = useConnectivity();
   const wasOfflineRef = useRef(false);
 
-  // Accounts state
-  const [accounts, setAccounts] = useState<StoredAccount[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ACCOUNTS);
-      return saved ? JSON.parse(saved) : DEFAULT_ACCOUNTS;
-    } catch {
-      return DEFAULT_ACCOUNTS;
-    }
-  });
+  // Firebase Auth state
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // User Profile state
+  // User Profile state (initialized from localStorage, synced to Firestore)
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.USER);
+      const saved = localStorage.getItem(LS_KEYS.USER);
       return saved ? JSON.parse(saved) : INITIAL_USER_PROFILE;
     } catch {
       return INITIAL_USER_PROFILE;
     }
   });
 
-  // Auth session state: one-time login/signup until user explicitly logs out
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.AUTH_SESSION) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  // Wardrobe state
+  // Wardrobe state (localStorage only)
   const [wardrobe, setWardrobe] = useState<ClothingItem[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.WARDROBE);
+      const saved = localStorage.getItem(LS_KEYS.WARDROBE);
       return saved ? JSON.parse(saved) : INITIAL_WARDROBE;
     } catch {
       return INITIAL_WARDROBE;
     }
   });
 
-  // Categories state
+  // Categories state (localStorage only)
   const [categories, setCategories] = useState<OutfitCategory[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+      const saved = localStorage.getItem(LS_KEYS.CATEGORIES);
       return saved ? JSON.parse(saved) : INITIAL_CATEGORIES;
     } catch {
       return INITIAL_CATEGORIES;
     }
   });
 
-  // Outfits state - clean empty default
+  // Outfits state (localStorage only)
   const [outfits, setOutfits] = useState<Outfit[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.OUTFITS);
+      const saved = localStorage.getItem(LS_KEYS.OUTFITS);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
 
-  // Weather state - strictly dynamic with GPS
+  // Weather state
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isWeatherLoading, setIsWeatherLoading] = useState<boolean>(false);
   const [isLocationOff, setIsLocationOff] = useState<boolean>(false);
@@ -188,7 +157,6 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Virtual Try-On state
   const [tryOnItemIds, setTryOnItemIds] = useState<string[]>(() => {
-    // Default to the first top, bottom, footwear if available
     const top = INITIAL_WARDROBE.find((i) => i.classification === 'Tops');
     const bottom = INITIAL_WARDROBE.find((i) => i.classification === 'Bottoms');
     const shoe = INITIAL_WARDROBE.find((i) => i.classification === 'Footwear');
@@ -199,7 +167,128 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return userProfile.sex === 'female' ? 'model_fem_01' : 'model_male_01';
   });
 
-  // Keep default model gender aligned with user profile
+  // AI generation state
+  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
+  const [currentAIRecommendation, setCurrentAIRecommendation] = useState<GeminiOutfitResult | null>(null);
+
+  // Batch recommendations state
+  const [recommendations, setRecommendations] = useState<GeminiOutfitResult[]>([]);
+  const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState<boolean>(false);
+
+  // ─── Firebase Auth Listener ─────────────────────────────
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setFirebaseUser(user);
+      setIsAuthLoading(false);
+
+      if (user) {
+        // Load profile from Firestore
+        const existingProfile = await FirestoreService.loadUserProfile(user.uid);
+        if (existingProfile) {
+          setUserProfile((prev) => ({ ...existingProfile, uploadedTryOnPhoto: prev.uploadedTryOnPhoto }));
+        } else {
+          // New user — create profile from Google account
+          const newProfile: UserProfile = {
+            id: user.uid,
+            name: user.displayName || 'User',
+            email: user.email || '',
+            avatar: user.photoURL || INITIAL_USER_PROFILE.avatar,
+            sex: undefined,
+            bodyType: undefined,
+            customNotes: '',
+          };
+          await FirestoreService.initializeUserData(user.uid, newProfile);
+          setUserProfile(newProfile);
+        }
+        // Mark session active
+        try {
+          localStorage.setItem(LS_KEYS.AUTH_SESSION, 'true');
+        } catch { /* ignore */ }
+      } else {
+        // User signed out — reset
+        setUserProfile(INITIAL_USER_PROFILE);
+        setWardrobe(INITIAL_WARDROBE);
+        setCategories(INITIAL_CATEGORIES);
+        setOutfits([]);
+        try {
+          localStorage.removeItem(LS_KEYS.AUTH_SESSION);
+        } catch { /* ignore */ }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // ─── Firebase Auth ──────────────────────────────────────
+  const loginWithGoogle = async () => {
+    setAuthError(null);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: any) {
+      setAuthError(err.message || 'Sign-in failed');
+      throw err;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setActiveTab('tryon');
+    } catch (err) {
+      console.warn('Logout error:', err);
+    }
+  };
+
+  const isAuthenticated = !!firebaseUser;
+  const userId = firebaseUser?.uid || null;
+
+  // ─── Sync to localStorage ───────────────────────────────
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEYS.WARDROBE, JSON.stringify(wardrobe));
+    } catch (e) {
+      console.warn('LocalStorage save error', e);
+    }
+  }, [wardrobe]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEYS.CATEGORIES, JSON.stringify(categories));
+    } catch (e) {
+      console.warn('LocalStorage save error', e);
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEYS.OUTFITS, JSON.stringify(outfits));
+    } catch (e) {
+      console.warn('LocalStorage save error', e);
+    }
+  }, [outfits]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEYS.USER, JSON.stringify(userProfile));
+    } catch (e) {
+      console.warn('LocalStorage save error', e);
+    }
+  }, [userProfile]);
+
+  // ─── Sync profile to Firestore (debounced) ──────────────
+  const profileTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
+    profileTimeoutRef.current = setTimeout(() => {
+      FirestoreService.saveUserProfile(userId, userProfile);
+    }, 2000);
+    return () => {
+      if (profileTimeoutRef.current) clearTimeout(profileTimeoutRef.current);
+    };
+  }, [userProfile, userId]);
+
+  // ─── Model gender sync ──────────────────────────────────
   useEffect(() => {
     if (userProfile.sex === 'female' && selectedTryOnModelId.startsWith('model_male')) {
       setSelectedTryOnModelId('model_fem_01');
@@ -208,8 +297,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [userProfile.sex, selectedTryOnModelId]);
 
-  // Dedicated action to open Virtual Try-On with specific items
-  const openVirtualTryOn = useCallback((itemIds?: string[], outfitTitle?: string) => {
+  // ─── Virtual Try-On ─────────────────────────────────────
+  const openVirtualTryOn = useCallback((itemIds?: string[], _outfitTitle?: string) => {
     if (itemIds && itemIds.length > 0) {
       setTryOnItemIds(itemIds);
     }
@@ -220,56 +309,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateUserProfile({ uploadedTryOnPhoto: photoBase64 });
   }, []);
 
-  // AI generation state
-  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
-  const [currentAIRecommendation, setCurrentAIRecommendation] = useState<GeminiOutfitResult | null>(null);
-
-  // Batch recommendations state (for carousel)
-  const [recommendations, setRecommendations] = useState<GeminiOutfitResult[]>([]);
-  const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState<boolean>(false);
-
-  // Sync to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.WARDROBE, JSON.stringify(wardrobe));
-    } catch (e) {
-      console.warn('LocalStorage save error', e);
-    }
-  }, [wardrobe]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
-    } catch (e) {
-      console.warn('LocalStorage save error', e);
-    }
-  }, [categories]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.OUTFITS, JSON.stringify(outfits));
-    } catch (e) {
-      console.warn('LocalStorage save error', e);
-    }
-  }, [outfits]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userProfile));
-    } catch (e) {
-      console.warn('LocalStorage save error', e);
-    }
-  }, [userProfile]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts));
-    } catch (e) {
-      console.warn('LocalStorage save accounts error', e);
-    }
-  }, [accounts]);
-
-  // Weather fetching with GPS coordinates
+  // ─── Weather ────────────────────────────────────────────
   const refreshWeather = useCallback(async (lat?: number, lon?: number) => {
     if (lat === undefined || lon === undefined) {
       setWeather(null);
@@ -291,7 +331,6 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsLocationOff(false);
     } catch (error) {
       console.error('Weather error:', error);
-      // When GPS or weather fetch fails, no weather showing
       setWeather(null);
       setIsLocationOff(true);
     } finally {
@@ -299,7 +338,6 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [isOnline]);
 
-  // Dedicated function to query device GPS location
   const requestGPSWeather = useCallback(() => {
     if (!navigator.geolocation) {
       setWeather(null);
@@ -326,12 +364,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   }, [refreshWeather]);
 
-  // Initial GPS check on mount
   useEffect(() => {
     requestGPSWeather();
   }, [requestGPSWeather]);
 
-  // Auto-retry weather when connection is restored after being offline
   useEffect(() => {
     if (isOnline && wasOfflineRef.current) {
       wasOfflineRef.current = false;
@@ -339,7 +375,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [isOnline, requestGPSWeather]);
 
-  // Clothing Item Operations
+  // ─── Clothing Item Operations ───────────────────────────
   const addClothingItem = (itemData: Omit<ClothingItem, 'id' | 'dateAdded' | 'wearCount'>) => {
     const newItem: ClothingItem = {
       ...itemData,
@@ -358,7 +394,6 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const deleteClothingItem = (id: string) => {
     setWardrobe((prev) => prev.filter((item) => item.id !== id));
-    // Also remove from any outfit that contains it
     setOutfits((prev) =>
       prev.map((outfit) => ({
         ...outfit,
@@ -387,7 +422,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   };
 
-  // Category Operations
+  // ─── Category Operations ────────────────────────────────
   const addCategory = (catData: Omit<OutfitCategory, 'id' | 'isCustom'>) => {
     const newCat: OutfitCategory = {
       ...catData,
@@ -411,7 +446,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCategories(INITIAL_CATEGORIES);
   };
 
-  // Outfit Operations
+  // ─── Outfit Operations ──────────────────────────────────
   const saveOutfit = (outfitData: Omit<Outfit, 'id' | 'createdAt'>): Outfit => {
     const newOutfit: Outfit = {
       ...outfitData,
@@ -442,102 +477,12 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // User Profile & Authentication
+  // ─── User Profile ───────────────────────────────────────
   const updateUserProfile = (updates: Partial<UserProfile>) => {
-    setUserProfile((prev) => {
-      const next = { ...prev, ...updates };
-      setAccounts((prevAccounts) =>
-        prevAccounts.map((acc) => (acc.id === prev.id ? { ...acc, ...updates } : acc))
-      );
-      return next;
-    });
+    setUserProfile((prev) => ({ ...prev, ...updates }));
   };
 
-  const login = (email: string, password?: string) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    const account = accounts.find((a) => a.email.toLowerCase() === trimmedEmail);
-
-    if (!account) {
-      return {
-        success: false,
-        error: 'No account found with this email. Please check your credentials or create an account.',
-      };
-    }
-
-    if (password && account.password && account.password !== password) {
-      return {
-        success: false,
-        error: 'Incorrect password. Please verify and try again.',
-      };
-    }
-
-    setUserProfile(account);
-    setIsAuthenticated(true);
-    try {
-      localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, 'true');
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(account));
-    } catch (e) {
-      console.warn(e);
-    }
-    return { success: true };
-  };
-
-  const signup = (data: {
-    name: string;
-    email: string;
-    password?: string;
-    sex: BiologicalSex;
-    bodyType: BodyTypeInfo;
-    uploadedTryOnPhoto?: string;
-  }) => {
-    const trimmedEmail = data.email.trim().toLowerCase();
-    if (accounts.some((a) => a.email.toLowerCase() === trimmedEmail)) {
-      return {
-        success: false,
-        error: 'An account with this email address already exists. Please log in instead.',
-      };
-    }
-
-    const newAccount: StoredAccount = {
-      id: `user_${Date.now()}`,
-      name: data.name.trim(),
-      email: trimmedEmail,
-      password: data.password || 'password123',
-      avatar:
-        data.uploadedTryOnPhoto ||
-        (data.sex === 'female'
-          ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'
-          : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80'),
-      sex: data.sex,
-      bodyType: data.bodyType,
-      customNotes: '',
-      uploadedTryOnPhoto: data.uploadedTryOnPhoto,
-    };
-
-    setAccounts((prev) => [...prev, newAccount]);
-    setUserProfile(newAccount);
-    setIsAuthenticated(true);
-    setActiveTab('tryon');
-    try {
-      localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, 'true');
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newAccount));
-    } catch (e) {
-      console.warn(e);
-    }
-    return { success: true };
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    try {
-      localStorage.removeItem(STORAGE_KEYS.AUTH_SESSION);
-    } catch (e) {
-      console.warn(e);
-    }
-    setActiveTab('tryon');
-  };
-
-  // Gemini AI Generation
+  // ─── AI Generation ──────────────────────────────────────
   const generateAIOutfit = async (categoryId: string, notes?: string): Promise<GeminiOutfitResult | null> => {
     if (!isOnline) return null;
 
@@ -593,7 +538,6 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCurrentAIRecommendation(null);
   };
 
-  // Generate multiple outfit recommendations for carousel
   const generateRecommendations = async (
     categoryId: string,
     count: number = 3,
@@ -650,7 +594,6 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  // Swap an item within a specific recommendation
   const swapItemInRecommendation = (recIndex: number, oldItemId: string, newItemId: string) => {
     setRecommendations((prev) => {
       const updated = [...prev];
@@ -664,23 +607,25 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
+  // ─── Reset All Data ─────────────────────────────────────
   const resetAllData = () => {
     setWardrobe(INITIAL_WARDROBE);
     setCategories(INITIAL_CATEGORIES);
-    setUserProfile(INITIAL_USER_PROFILE);
     setOutfits([]);
-    localStorage.removeItem(STORAGE_KEYS.WARDROBE);
-    localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
-    localStorage.removeItem(STORAGE_KEYS.OUTFITS);
-    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(LS_KEYS.WARDROBE);
+    localStorage.removeItem(LS_KEYS.CATEGORIES);
+    localStorage.removeItem(LS_KEYS.OUTFITS);
   };
 
   return (
     <WardrobeContext.Provider
       value={{
         isAuthenticated,
-        login,
-        signup,
+        isAuthLoading,
+        authLoading: isAuthLoading,
+        authError,
+        userId,
+        loginWithGoogle,
         logout,
         wardrobe,
         categories,

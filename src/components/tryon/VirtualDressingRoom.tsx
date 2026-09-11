@@ -61,9 +61,9 @@ export const VirtualDressingRoom: React.FC<VirtualDressingRoomProps> = ({ onBack
   const [showOriginalComparison, setShowOriginalComparison] = useState(false);
 
   // User Body Profile state
-  const [bodyProfile, setBodyProfile] = useState<UserBodyProfile | null>(() => {
-    return StorageService.loadBodyProfile(userProfile.id);
-  });
+  const [bodyProfile, setBodyProfile] = useState<UserBodyProfile | null>(
+    StorageService.loadBodyProfile(userProfile.id)
+  );
   const [isBodyCaptureOpen, setIsBodyCaptureOpen] = useState(false);
 
   // Clothing slot drawer modal state
@@ -164,7 +164,7 @@ export const VirtualDressingRoom: React.FC<VirtualDressingRoomProps> = ({ onBack
     }
 
     // Clear cache to force fresh generation
-    StorageService.clearTryOnCache(bodyProfile.userId);
+    await StorageService.clearTryOnCache(bodyProfile.userId);
 
     setIsGenerating(true);
     setGenerationError(null);

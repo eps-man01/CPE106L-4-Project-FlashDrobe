@@ -52,7 +52,7 @@ export class VirtualTryOnService {
     const cacheKey = `${itemKey}_${viewAngle}${targetClassification ? `_${targetClassification}` : ''}`;
 
     // Check cache
-    const cached = StorageService.getCachedTryOn(userBodyProfile.userId, cacheKey);
+    const cached = await StorageService.getCachedTryOn(userBodyProfile.userId, cacheKey);
     if (cached) {
       onProgress?.({
         stage: 'Loading cached try-on...',
@@ -110,7 +110,7 @@ export class VirtualTryOnService {
     await new Promise((r) => setTimeout(r, 300));
 
     // Cache successful result
-    StorageService.cacheTryOn(userBodyProfile.userId, cacheKey, result);
+    await StorageService.cacheTryOn(userBodyProfile.userId, cacheKey, result);
 
     onProgress?.({
       stage: 'Complete',

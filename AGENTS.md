@@ -63,8 +63,8 @@ npm run clean
 ## Environment Variables
 
 - `GEMINI_API_KEY` - Required for AI outfit recommendations and virtual try-on
-- `APP_URL` - Auto-injected by AI Studio at runtime
-- `DISABLE_HMR` - Disables Vite HMR when set to 'true' (used in AI Studio)
+- `APP_URL` - The URL where this app is hosted
+- `DISABLE_HMR` - Disables Vite HMR when set to 'true'
 
 ## Testing
 

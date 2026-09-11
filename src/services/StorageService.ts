@@ -3,13 +3,11 @@ import { UserBodyProfile, TryOnGenerationResult } from '../types';
 const STORAGE_KEYS = {
   BODY_PROFILE: 'flashdrobe_user_body_profile_v1',
   TRYON_CACHE: 'flashdrobe_tryon_cache_v2',
-  TRYON_PREFERENCES: 'flashdrobe_tryon_prefs_v1',
 };
 
 /**
- * StorageService handles private client-side and cloud storage persistence
- * for sensitive user body photographs, representations, and try-on results.
- * Respects strict user privacy and offers immediate, complete deletion.
+ * StorageService handles client-side localStorage persistence
+ * for body photographs, representations, and try-on results.
  */
 export class StorageService {
   /**
@@ -40,7 +38,6 @@ export class StorageService {
 
   /**
    * Permanently delete user body profile and all associated photographs
-   * Ensures user privacy as mandated by Requirement 14.
    */
   public static deleteBodyProfile(userId: string = 'user_default'): void {
     try {
@@ -84,7 +81,7 @@ export class StorageService {
         ...result,
         cachedAt: new Date().toISOString(),
       };
-      // Keep cache size bounded to last 15 looks to avoid storage exhaustion
+      // Keep cache size bounded to last 15 looks
       const keys = Object.keys(cacheMap);
       if (keys.length > 15) {
         delete cacheMap[keys[0]];

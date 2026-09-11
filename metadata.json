@@ -1,11 +1,4 @@
 {
-  "name": "Remix Flashdrobe - Digital Wardrobe \u0026 AI Stylist",
-  "description": "Android digital-personalized wardrobe application (D-PWA) for managing clothing collections, custom categories, live weather, and AI outfit recommendations using Gemini.",
-  "requestFramePermissions": [
-    "camera",
-    "geolocation"
-  ],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "name": "Flashdrobe - Digital Wardrobe & AI Stylist",
+  "description": "Digital personalized wardrobe application with real-time GPS weather integration and AI outfit styling."
 }
