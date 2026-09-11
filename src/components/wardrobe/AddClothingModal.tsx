@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useWardrobe } from '../../context/WardrobeContext';
 import { ClothingClassification, SeasonSuitability } from '../../types';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface AddClothingModalProps {
   isOpen: boolean;
@@ -43,6 +44,8 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
   initialMode = 'camera',
 }) => {
   const { addClothingItem } = useWardrobe();
+
+  const [shouldRender, isExiting] = useDelayedRender(isOpen);
 
   const [activePhotoTab, setActivePhotoTab] = useState<'camera' | 'upload'>(initialMode);
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -245,26 +248,34 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
     <div
       id="add-clothing-modal-overlay"
-      className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 text-stone-900 animate-in fade-in duration-200"
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`}
+      style={{ backgroundColor: 'rgba(0,0,0,0.35)', color: 'var(--md-on-surface)' }}
     >
       <div
         id="add-clothing-bottom-sheet"
-        className="w-full max-w-lg bg-white border-t sm:border border-[#e7e2d9] sm:rounded-3xl rounded-t-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200"
+        className={`w-full max-w-lg border-t sm:border sm:rounded-3xl rounded-t-3xl max-h-[92vh] flex flex-col overflow-hidden md-elevation-5 ${isExiting ? 'animate-md-exit' : 'animate-md-sheet'}`}
+        style={{ backgroundColor: 'var(--md-surface-container-lowest)', borderColor: 'var(--md-outline-variant)' }}
       >
         {/* Header */}
-        <div className="px-5 py-3.5 border-b border-[#e7e2d9] flex items-center justify-between bg-stone-50/90">
+        <div
+          className="px-5 py-3.5 border-b flex items-center justify-between"
+          style={{ borderColor: 'var(--md-outline-variant)', backgroundColor: 'var(--md-surface-container)' }}
+        >
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#f5ede3] border border-[#e5dec9] flex items-center justify-center">
-              <Camera className="w-4 h-4 text-[#8c5836] stroke-[2.5]" />
+            <div
+              className="w-8 h-8 rounded-xl border flex items-center justify-center md-elevation-1"
+              style={{ backgroundColor: 'var(--md-primary-container)', borderColor: 'var(--md-outline-variant)' }}
+            >
+              <Camera className="w-4 h-4 stroke-[2.5]" style={{ color: 'var(--md-primary)' }} />
             </div>
             <div>
-              <h3 className="font-extrabold text-stone-900 text-sm">Add Item to Wardrobe</h3>
-              <p className="text-[11px] text-stone-500">Take or upload a photo and pick category</p>
+              <h3 className="font-extrabold text-sm" style={{ color: 'var(--md-on-surface)' }}>Add Item to Wardrobe</h3>
+              <p className="text-[11px]" style={{ color: 'var(--md-on-surface-variant)' }}>Take or upload a photo and pick category</p>
             </div>
           </div>
           <button
@@ -272,7 +283,8 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
               cleanupModal();
               onClose();
             }}
-            className="p-1.5 rounded-full bg-stone-200/80 text-stone-600 hover:text-stone-900 hover:bg-stone-300 transition-colors"
+            className="p-1.5 rounded-full transition-colors"
+            style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)' }}
           >
             <X className="w-4 h-4" />
           </button>
@@ -283,11 +295,11 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
           {/* Photo Section */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-bold text-stone-800">
+              <label className="block text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>
                 Garment Photo *
               </label>
               {imageUrl && (
-                <span className="text-[10px] text-[#6b7c59] font-bold flex items-center space-x-1">
+                <span className="text-[10px] font-bold flex items-center space-x-1" style={{ color: 'var(--md-primary)' }}>
                   <Check className="w-3 h-3" />
                   <span>Photo Ready</span>
                 </span>
@@ -295,7 +307,10 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
             </div>
 
             {/* Photo Tabs */}
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-100 rounded-2xl mb-3 border border-[#e7e2d9]">
+            <div
+              className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl mb-3 border"
+              style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+            >
               <button
                 type="button"
                 id="tab-select-camera"
@@ -303,11 +318,14 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                   setActivePhotoTab('camera');
                   if (!imageUrl) startLiveCamera();
                 }}
-                className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
-                  activePhotoTab === 'camera'
-                    ? 'bg-white text-[#8c5836] shadow-xs border border-[#e7e2d9]'
-                    : 'text-stone-600 hover:text-stone-900'
+                className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all border ${
+                  activePhotoTab === 'camera' ? 'md-elevation-1' : ''
                 }`}
+                style={
+                  activePhotoTab === 'camera'
+                    ? { backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-primary)', borderColor: 'var(--md-outline-variant)' }
+                    : { color: 'var(--md-on-surface-variant)', borderColor: 'transparent' }
+                }
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>Snap Camera</span>
@@ -320,11 +338,14 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                   setActivePhotoTab('upload');
                   stopCameraStream();
                 }}
-                className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all ${
-                  activePhotoTab === 'upload'
-                    ? 'bg-white text-[#8c5836] shadow-xs border border-[#e7e2d9]'
-                    : 'text-stone-600 hover:text-stone-900'
+                className={`py-2 text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all border ${
+                  activePhotoTab === 'upload' ? 'md-elevation-1' : ''
                 }`}
+                style={
+                  activePhotoTab === 'upload'
+                    ? { backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-primary)', borderColor: 'var(--md-outline-variant)' }
+                    : { color: 'var(--md-on-surface-variant)', borderColor: 'transparent' }
+                }
               >
                 <FolderOpen className="w-3.5 h-3.5" />
                 <span>Gallery / Files</span>
@@ -354,7 +375,10 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                 {activePhotoTab === 'camera' && (
                   <div className="space-y-2 mb-3">
                     {isCameraStreamActive ? (
-                      <div className="relative rounded-2xl overflow-hidden bg-stone-950 aspect-[4/3] border border-stone-300 flex flex-col items-center justify-center shadow-inner">
+                      <div
+                        className="relative rounded-2xl overflow-hidden aspect-[4/3] border flex flex-col items-center justify-center shadow-inner"
+                        style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+                      >
                         <video
                           ref={videoRef}
                           autoPlay
@@ -364,8 +388,14 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                         />
 
                         {/* Centering Guide */}
-                        <div className="absolute inset-8 border-2 border-dashed border-white/50 rounded-2xl pointer-events-none flex items-center justify-center">
-                          <span className="text-[11px] text-white/90 bg-black/60 px-3 py-1 rounded-full font-medium backdrop-blur-xs">
+                        <div
+                          className="absolute inset-8 border-2 border-dashed rounded-2xl pointer-events-none flex items-center justify-center"
+                          style={{ borderColor: 'rgba(255,255,255,0.5)' }}
+                        >
+                          <span
+                            className="text-[11px] px-3 py-1 rounded-full font-medium backdrop-blur-xs"
+                            style={{ color: 'rgba(255,255,255,0.9)', backgroundColor: 'var(--md-scrim)', opacity: 0.6 }}
+                          >
                             Position clothing item here
                           </span>
                         </div>
@@ -375,7 +405,8 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                           type="button"
                           onClick={toggleCameraFacing}
                           title="Switch Camera"
-                          className="absolute top-3 right-3 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md transition-colors"
+                          className="absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-colors"
+                          style={{ backgroundColor: 'var(--md-scrim)', opacity: 0.6, color: 'var(--md-on-primary)' }}
                         >
                           <RotateCw className="w-4 h-4" />
                         </button>
@@ -386,7 +417,8 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                             type="button"
                             id="btn-snap-live-camera"
                             onClick={captureFromLiveCamera}
-                            className="px-6 py-2.5 bg-[#8c5836] hover:bg-[#784a2c] text-white font-extrabold text-xs rounded-full flex items-center space-x-2 shadow-xl border-2 border-white transition-transform active:scale-95"
+                            className="px-6 py-2.5 font-extrabold text-xs rounded-full flex items-center space-x-2 border-2 transition-transform active:scale-95 md-elevation-3"
+                            style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)', borderColor: 'var(--md-on-primary)' }}
                           >
                             <Camera className="w-4 h-4" />
                             <span>Capture Photo</span>
@@ -395,15 +427,21 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                       </div>
                     ) : (
                       /* Mobile Native Camera Launcher */
-                      <div className="bg-[#f5ede3]/70 border-2 border-dashed border-[#ddcfbe] rounded-3xl p-5 text-center flex flex-col items-center justify-center space-y-3">
-                        <div className="w-12 h-12 rounded-2xl bg-white border border-[#e7e2d9] flex items-center justify-center shadow-xs">
-                          <Camera className="w-6 h-6 text-[#8c5836]" />
+                      <div
+                        className="border-2 border-dashed rounded-3xl p-5 text-center flex flex-col items-center justify-center space-y-3"
+                        style={{ backgroundColor: 'var(--md-primary-container)', borderColor: 'var(--md-outline-variant)' }}
+                      >
+                        <div
+                          className="w-12 h-12 rounded-2xl border flex items-center justify-center md-elevation-1"
+                          style={{ backgroundColor: 'var(--md-surface-container-lowest)', borderColor: 'var(--md-outline-variant)' }}
+                        >
+                          <Camera className="w-6 h-6" style={{ color: 'var(--md-primary)' }} />
                         </div>
                         <div>
-                          <h4 className="text-xs font-extrabold text-stone-900">
+                          <h4 className="text-xs font-extrabold" style={{ color: 'var(--md-on-surface)' }}>
                             Snap Clothing Photo
                           </h4>
-                          <p className="text-[11px] text-stone-500 max-w-xs mt-0.5">
+                          <p className="text-[11px] max-w-xs mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
                             Take a photo using your phone or web camera
                           </p>
                         </div>
@@ -411,7 +449,8 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                           <button
                             type="button"
                             onClick={() => nativeCameraInputRef.current?.click()}
-                            className="flex-1 py-2.5 px-4 bg-[#8c5836] hover:bg-[#784a2c] text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center space-x-1.5 transition-colors"
+                            className="flex-1 py-2.5 px-4 font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 transition-colors md-elevation-1"
+                            style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
                           >
                             <Camera className="w-4 h-4" />
                             <span>Open Camera</span>
@@ -419,7 +458,8 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                           <button
                             type="button"
                             onClick={() => startLiveCamera()}
-                            className="py-2.5 px-3 bg-white hover:bg-stone-100 text-stone-700 border border-[#e7e2d9] font-bold text-xs rounded-xl transition-colors"
+                            className="py-2.5 px-3 font-bold text-xs rounded-xl transition-colors border"
+                            style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
                           >
                             Live Viewfinder
                           </button>
@@ -437,25 +477,32 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                       onDrop={handleDrop}
                       onClick={() => galleryInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-3xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 ${
-                        isDragging
-                          ? 'border-[#8c5836] bg-[#f5ede3] scale-[0.99]'
-                          : 'border-stone-300 hover:border-[#8c5836] bg-stone-50/60 hover:bg-[#f5ede3]/40'
+                        isDragging ? 'scale-[0.99]' : ''
                       }`}
+                      style={
+                        isDragging
+                          ? { borderColor: 'var(--md-primary)', backgroundColor: 'var(--md-primary-container)' }
+                          : { borderColor: 'var(--md-outline-variant)', backgroundColor: 'var(--md-surface-container)' }
+                      }
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-white border border-[#e7e2d9] flex items-center justify-center shadow-xs">
-                        <FolderOpen className="w-6 h-6 text-[#8c5836]" />
+                      <div
+                        className="w-12 h-12 rounded-2xl border flex items-center justify-center md-elevation-1"
+                        style={{ backgroundColor: 'var(--md-surface-container-lowest)', borderColor: 'var(--md-outline-variant)' }}
+                      >
+                        <FolderOpen className="w-6 h-6" style={{ color: 'var(--md-primary)' }} />
                       </div>
                       <div>
-                        <h4 className="text-xs font-bold text-stone-900">
+                        <h4 className="text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>
                           Choose Photo from Phone Gallery
                         </h4>
-                        <p className="text-[11px] text-stone-500 mt-0.5">
-                          Tap to browse photos • Drag & drop or paste
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                          Tap to browse photos &bull; Drag & drop or paste
                         </p>
                       </div>
                       <button
                         type="button"
-                        className="mt-1 px-4 py-2 bg-white border border-[#e7e2d9] text-stone-800 text-xs font-bold rounded-xl shadow-2xs hover:bg-stone-100 transition-colors"
+                        className="mt-1 px-4 py-2 border text-xs font-bold rounded-xl transition-colors md-elevation-1"
+                        style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
                       >
                         Browse Photos
                       </button>
@@ -468,38 +515,49 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
             {/* Photo Preview Strip when photo is loaded */}
             {imageUrl && (
               <div className="space-y-3 mb-2">
-                <div className="flex items-center space-x-3 p-3 bg-stone-50 rounded-2xl border border-[#e7e2d9] shadow-2xs">
+                <div
+                  className="flex items-center space-x-3 p-3 rounded-2xl border md-elevation-1"
+                  style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+                >
                   <img
                     src={imageUrl}
                     alt="Clothing item"
-                    className="w-16 h-16 object-cover rounded-xl border border-[#e7e2d9] bg-white flex-shrink-0"
+                    className="w-16 h-16 object-cover rounded-xl flex-shrink-0 border"
+                    style={{ borderColor: 'var(--md-outline-variant)', backgroundColor: 'var(--md-surface-container-lowest)' }}
                   />
                   <div className="flex-1 min-w-0">
-                    <span className="text-xs font-extrabold text-stone-900 truncate block">
+                    <span className="text-xs font-extrabold truncate block" style={{ color: 'var(--md-on-surface)' }}>
                       {selectedClassification}
                     </span>
-                    <p className="text-[11px] text-stone-500 mt-0.5">
-                      Category: <strong className="text-stone-800">{selectedClassification}</strong>
+                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                      Category: <strong style={{ color: 'var(--md-on-surface)' }}>{selectedClassification}</strong>
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={handleRemovePhoto}
                     title="Retake / Change Photo"
-                    className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                    className="p-2 rounded-xl transition-colors"
+                    style={{ color: 'var(--md-on-surface-variant)' }}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Classification Category Selection */}
-                <div className="p-3.5 bg-stone-50 rounded-2xl border border-[#e7e2d9] space-y-3">
+                <div
+                  className="p-3.5 rounded-2xl border space-y-3"
+                  style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+                >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-xs font-bold text-stone-800">
+                      <label className="block text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>
                         Select Category:
                       </label>
-                      <span className="text-[10px] font-bold text-[#8c5836] bg-[#f5ede3] px-2.5 py-0.5 rounded-full border border-[#e5dec9]">
+                      <span
+                        className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border"
+                        style={{ color: 'var(--md-primary)', backgroundColor: 'var(--md-primary-container)', borderColor: 'var(--md-outline-variant)' }}
+                      >
                         {selectedClassification}
                       </span>
                     </div>
@@ -515,10 +573,13 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                             type="button"
                             onClick={() => handleClassificationSelect(opt.id)}
                             className={`py-2 px-1 rounded-xl text-xs font-bold border transition-all flex flex-col items-center space-y-1 ${
-                              isSelected
-                                ? 'bg-[#8c5836] text-white border-[#8c5836] shadow-sm scale-[1.02]'
-                                : 'bg-white text-stone-700 border-[#e7e2d9] hover:bg-stone-100 active:scale-98'
+                              isSelected ? 'scale-[1.02] md-elevation-1' : 'active:scale-98'
                             }`}
+                            style={
+                              isSelected
+                                ? { backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)', borderColor: 'var(--md-primary)' }
+                                : { backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }
+                            }
                           >
                             <IconComp className="w-4 h-4" />
                             <span className="text-[10px] leading-tight">{opt.label}</span>
@@ -529,9 +590,12 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                   </div>
 
                   {/* Warmth Level for weather algorithm matching */}
-                  <div className="pt-2 border-t border-[#e7e2d9] flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-stone-700 flex items-center space-x-1">
-                      <Thermometer className="w-3 h-3 text-stone-500" />
+                  <div
+                    className="pt-2 border-t flex items-center justify-between"
+                    style={{ borderColor: 'var(--md-outline-variant)' }}
+                  >
+                    <label className="text-[11px] font-bold flex items-center space-x-1" style={{ color: 'var(--md-on-surface)' }}>
+                      <Thermometer className="w-3 h-3" style={{ color: 'var(--md-on-surface-variant)' }} />
                       <span>Warmth Level:</span>
                     </label>
                     <div className="flex items-center space-x-1">
@@ -541,10 +605,13 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
                           type="button"
                           onClick={() => setWarmthLevel(lvl)}
                           className={`w-6 h-6 rounded-lg text-[10px] font-bold border transition-colors ${
-                            warmthLevel === lvl
-                              ? 'bg-[#8c5836] text-white border-[#8c5836]'
-                              : 'bg-white text-stone-600 border-[#e7e2d9] hover:bg-stone-100'
+                            warmthLevel === lvl ? 'md-elevation-1' : ''
                           }`}
+                          style={
+                            warmthLevel === lvl
+                              ? { backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)', borderColor: 'var(--md-primary)' }
+                              : { backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface-variant)', borderColor: 'var(--md-outline-variant)' }
+                          }
                         >
                           {lvl}
                         </button>
@@ -562,11 +629,12 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
               type="submit"
               id="btn-save-clothing-item"
               disabled={!imageUrl}
-              className={`w-full py-3.5 rounded-2xl text-xs font-bold shadow-md flex items-center justify-center space-x-2 transition-all active:scale-98 ${
+              className="w-full py-3.5 rounded-2xl text-xs font-bold flex items-center justify-center space-x-2 transition-all active:scale-98 md-elevation-1"
+              style={
                 !imageUrl
-                  ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                  : 'bg-[#8c5836] hover:bg-[#784a2c] text-white shadow-[#8c5836]/25'
-              }`}
+                  ? { backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)', cursor: 'not-allowed' }
+                  : { backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }
+              }
             >
               <Plus className="w-4 h-4 stroke-[3]" />
               <span>Save {selectedClassification} to Wardrobe</span>

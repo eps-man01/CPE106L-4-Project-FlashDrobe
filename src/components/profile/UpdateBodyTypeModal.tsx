@@ -3,6 +3,7 @@ import { X, Check, Sparkles } from 'lucide-react';
 import { BiologicalSex, BodyTypeInfo } from '../../types';
 import { getBodyTypesForSex } from '../../data/bodyTypes';
 import { BodySilhouetteSvg } from '../auth/BodySilhouetteSvg';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface UpdateBodyTypeModalProps {
   isOpen: boolean;
@@ -26,7 +27,9 @@ export const UpdateBodyTypeModal: React.FC<UpdateBodyTypeModalProps> = ({
     return getBodyTypesForSex(initialSex)[3];
   });
 
-  if (!isOpen) return null;
+  const [shouldRender, isExiting] = useDelayedRender(isOpen);
+
+  if (!shouldRender) return null;
 
   const handleSexChange = (newSex: BiologicalSex) => {
     setSex(newSex);
@@ -44,8 +47,8 @@ export const UpdateBodyTypeModal: React.FC<UpdateBodyTypeModalProps> = ({
   const availableBodyTypes = getBodyTypesForSex(sex);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white border border-stone-200 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh]">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`} style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
+      <div className={`bg-white border border-stone-200 w-full max-w-md rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh] ${isExiting ? 'animate-md-exit' : 'animate-md-sheet'}`}>
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-stone-100">
           <div>

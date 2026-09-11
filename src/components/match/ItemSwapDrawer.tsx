@@ -2,8 +2,10 @@ import React, { useMemo } from 'react';
 import { X, Check } from 'lucide-react';
 import { useWardrobe } from '../../context/WardrobeContext';
 import { ClothingClassification } from '../../types';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface ItemSwapDrawerProps {
+  isOpen: boolean;
   classification: ClothingClassification;
   currentItemId: string | null;
   onSelectItem: (itemId: string) => void;
@@ -11,21 +13,25 @@ interface ItemSwapDrawerProps {
 }
 
 export const ItemSwapDrawer: React.FC<ItemSwapDrawerProps> = ({
+  isOpen,
   classification,
   currentItemId,
   onSelectItem,
   onClose,
 }) => {
   const { wardrobe } = useWardrobe();
+  const [shouldRender, isExiting] = useDelayedRender(isOpen);
 
   const items = useMemo(
     () => wardrobe.filter((item) => item.classification === classification),
     [wardrobe, classification]
   );
 
+  if (!shouldRender) return null;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end justify-center">
-      <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[70vh] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
+    <div className={`fixed inset-0 z-50 flex items-end justify-center p-0 sm:p-4 backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`} style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
+      <div className={`bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[70vh] overflow-hidden shadow-2xl ${isExiting ? 'animate-md-exit' : 'animate-md-sheet'}`}>
         {/* Header */}
         <div className="border-b border-[#eee9df] px-4 py-3 flex items-center justify-between">
           <div>
@@ -61,32 +67,39 @@ export const ItemSwapDrawer: React.FC<ItemSwapDrawerProps> = ({
                     }}
                     className={`relative flex flex-col rounded-2xl p-1.5 text-left border transition-all ${
                       isSelected
-                        ? 'bg-[#f5ede3] border-[#8c5836] ring-2 ring-[#8c5836]/30 shadow-xs'
-                        : 'bg-stone-50 border-[#e7e2d9] hover:bg-stone-100 active:scale-95'
+                        ? 'border-2'
+                        : 'hover:bg-stone-100 active:scale-95'
                     }`}
+                    style={{
+                      backgroundColor: isSelected ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
+                      borderColor: isSelected ? 'var(--md-primary)' : 'var(--md-outline-variant)',
+                    }}
                   >
                     {isSelected && (
-                      <div className="absolute top-1.5 right-1.5 z-10 w-4 h-4 rounded-full bg-[#8c5836] flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                      <div
+                        className="absolute top-1.5 right-1.5 z-10 w-4 h-4 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: 'var(--md-primary)' }}
+                      >
+                        <Check className="w-2.5 h-2.5" strokeWidth={3} style={{ color: 'var(--md-on-primary)' }} />
                       </div>
                     )}
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="w-full aspect-square object-cover rounded-xl border border-[#e7e2d9]"
+                      className="w-full aspect-square object-cover rounded-xl border border-[var(--md-outline-variant)]"
                     />
-                    <span className="text-[10px] font-bold text-stone-900 truncate mt-1.5">
+                    <span className="text-[10px] font-bold truncate mt-1.5" style={{ color: 'var(--md-on-surface)' }}>
                       {item.name}
                     </span>
-                    <span className="text-[9px] text-[#8c5836] font-semibold truncate">
+                    <span className="text-[9px] font-semibold truncate" style={{ color: 'var(--md-primary)' }}>
                       {item.subType}
                     </span>
-                    <div className="flex items-center space-x-1 mt-1">
+                    <div className="flex items-center gap-1 mt-1">
                       <span
-                        className="w-2.5 h-2.5 rounded-full border border-[#e7e2d9]"
-                        style={{ backgroundColor: item.color }}
+                        className="w-2.5 h-2.5 rounded-full border"
+                        style={{ backgroundColor: item.color, borderColor: 'var(--md-outline-variant)' }}
                       />
-                      <span className="text-[9px] text-stone-500 font-medium">{item.colorName}</span>
+                      <span className="text-[9px] font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{item.colorName}</span>
                     </div>
                   </button>
                 );

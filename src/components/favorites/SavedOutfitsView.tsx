@@ -44,29 +44,29 @@ export const SavedOutfitsView: React.FC = () => {
   };
 
   return (
-    <div id="saved-outfits-view-root" className="space-y-4 pb-24 text-stone-900">
+    <div id="saved-outfits-view-root" className="space-y-4 pb-24" style={{ color: 'var(--md-on-surface)' }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-extrabold text-stone-900 flex items-center space-x-1.5">
-            <BookmarkCheck className="w-4 h-4 text-[#8c5836]" />
+          <h2 className="text-base font-bold font-display flex items-center gap-1.5" style={{ color: 'var(--md-on-surface)' }}>
+            <BookmarkCheck className="w-4 h-4" style={{ color: 'var(--md-primary)' }} />
             <span>Saved Outfits & History</span>
           </h2>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs" style={{ color: 'var(--md-on-surface-variant)' }}>
             {outfits.length} saved {outfits.length === 1 ? 'combination' : 'combinations'}
           </p>
         </div>
       </div>
 
-      {/* Category Filter Pills */}
-      <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1">
+      {/* Category Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
         <button
           onClick={() => setSelectedCategoryFilter('All')}
-          className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-            selectedCategoryFilter === 'All'
-              ? 'bg-[#8c5836] text-white border-[#8c5836] shadow-xs'
-              : 'bg-white text-stone-600 border-[#e7e2d9] hover:bg-stone-50'
-          }`}
+          className="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all"
+          style={{
+            backgroundColor: selectedCategoryFilter === 'All' ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
+            color: selectedCategoryFilter === 'All' ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+          }}
         >
           All Looks ({outfits.length})
         </button>
@@ -80,11 +80,11 @@ export const SavedOutfitsView: React.FC = () => {
             <button
               key={cat.id}
               onClick={() => setSelectedCategoryFilter(cat.id)}
-              className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-                isSelected
-                  ? 'bg-[#8c5836] text-white border-[#8c5836] shadow-xs'
-                  : 'bg-white text-stone-600 border-[#e7e2d9] hover:bg-stone-50'
-              }`}
+              className="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all"
+              style={{
+                backgroundColor: isSelected ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
+                color: isSelected ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+              }}
             >
               {cat.name} ({count})
             </button>
@@ -94,19 +94,26 @@ export const SavedOutfitsView: React.FC = () => {
 
       {/* Outfits List */}
       {filteredOutfits.length === 0 ? (
-        <div className="text-center py-14 px-4 rounded-3xl bg-white border border-[#e7e2d9] flex flex-col items-center justify-center space-y-3 shadow-xs">
-          <div className="w-14 h-14 rounded-2xl bg-[#f5ede3] border border-[#e5dec9] flex items-center justify-center">
-            <BookmarkCheck className="w-7 h-7 text-[#8c5836]" />
+        <div
+          className="text-center py-14 px-4 rounded-3xl flex flex-col items-center justify-center space-y-3 md-elevation-1"
+          style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+        >
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{ backgroundColor: 'var(--md-primary-container)' }}
+          >
+            <BookmarkCheck className="w-7 h-7" style={{ color: 'var(--md-on-primary-container)' }} />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-stone-900">No saved outfits yet</h4>
-            <p className="text-xs text-stone-500 mt-1 max-w-xs">
+            <h4 className="text-sm font-bold" style={{ color: 'var(--md-on-surface)' }}>No saved outfits yet</h4>
+            <p className="text-xs mt-1 max-w-xs" style={{ color: 'var(--md-on-surface-variant)' }}>
               Generate AI recommendations or mix and match your wardrobe pieces to save your favorite combinations.
             </p>
           </div>
           <button
             onClick={() => setActiveTab('stylist')}
-            className="mt-2 px-4 py-2 bg-[#8c5836] hover:bg-[#784a2c] text-white font-bold rounded-xl text-xs shadow-xs"
+            className="mt-2 px-5 py-2.5 font-bold rounded-full text-xs md-elevation-1"
+            style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
           >
             Go to AI Stylist
           </button>
@@ -124,23 +131,27 @@ export const SavedOutfitsView: React.FC = () => {
               <div
                 key={outfit.id}
                 id={`outfit-card-${outfit.id}`}
-                className="bg-white border border-[#e7e2d9] hover:border-stone-300 rounded-3xl p-4 shadow-sm space-y-3.5 transition-all"
+                className="rounded-3xl p-4 md-elevation-1 space-y-3.5 transition-all md-elevation"
+                style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
               >
                 {/* Header Row */}
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#f5ede3] text-[#784a2c] border border-[#e5dec9]">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)' }}
+                      >
                         {outfit.categoryName}
                       </span>
                       {outfit.weatherScore && (
-                        <span className="text-[10px] font-bold text-[#6b7c59] flex items-center space-x-1">
-                          <ShieldCheck className="w-3 h-3 text-[#6b7c59]" />
+                        <span className="text-[10px] font-bold flex items-center gap-1" style={{ color: 'var(--md-tertiary)' }}>
+                          <ShieldCheck className="w-3 h-3" />
                           <span>{outfit.weatherScore}% Match</span>
                         </span>
                       )}
                     </div>
-                    <h3 className="text-sm font-extrabold text-stone-900 mt-1">{outfit.name}</h3>
+                    <h3 className="text-sm font-bold mt-1" style={{ color: 'var(--md-on-surface)' }}>{outfit.name}</h3>
                   </div>
 
                   <div className="flex items-center space-x-1">

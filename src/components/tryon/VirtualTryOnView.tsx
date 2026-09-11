@@ -251,17 +251,20 @@ export const VirtualTryOnView: React.FC = () => {
   };
 
   return (
-    <div id="virtual-try-on-root" className="space-y-4 pb-28 text-stone-900">
-      {/* Main View Mode Switcher */}
-      <div className="bg-stone-200/80 p-1 rounded-2xl flex items-center border border-[#e7e2d9] shadow-xs">
+    <div id="virtual-try-on-root" className="space-y-4 pb-28" style={{ color: 'var(--md-on-surface)' }}>
+      {/* Main View Mode Switcher — Segmented Button */}
+      <div
+        className="p-1 rounded-2xl flex items-center"
+        style={{ backgroundColor: 'var(--md-surface-container-high)' }}
+      >
         <button
           id="tab-recommendations-mode"
           onClick={() => setMainScreenMode('recommendations')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center space-x-2 ${
-            mainScreenMode === 'recommendations'
-              ? 'bg-[#8c5836] text-white shadow-xs'
-              : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100'
-          }`}
+          className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: mainScreenMode === 'recommendations' ? 'var(--md-primary-container)' : 'transparent',
+            color: mainScreenMode === 'recommendations' ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+          }}
         >
           <Sparkles className="w-4 h-4" />
           <span>Mix & Match</span>
@@ -270,11 +273,11 @@ export const VirtualTryOnView: React.FC = () => {
         <button
           id="tab-dressing-room-mode"
           onClick={() => setMainScreenMode('dressing-room')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center space-x-2 ${
-            mainScreenMode === 'dressing-room'
-              ? 'bg-[#8c5836] text-white shadow-xs'
-              : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100'
-          }`}
+          className="flex-1 py-2.5 px-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: mainScreenMode === 'dressing-room' ? 'var(--md-primary-container)' : 'transparent',
+            color: mainScreenMode === 'dressing-room' ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+          }}
         >
           <Shirt className="w-4 h-4" />
           <span>Virtual Dressing Room</span>
@@ -286,45 +289,59 @@ export const VirtualTryOnView: React.FC = () => {
       ) : (
         <>
           {/* Header */}
-          <div className="bg-white border border-[#e7e2d9] rounded-3xl p-3.5 sm:p-4 shadow-xs">
+          <div
+            className="rounded-3xl p-4 md-elevation-1"
+            style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+          >
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <span className="p-1 rounded-lg bg-[#8c5836] text-white">
-                  <Sparkles className="w-4 h-4 stroke-[2.5]" />
-                </span>
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--md-primary-container)' }}
+                >
+                  <Sparkles className="w-4 h-4" style={{ color: 'var(--md-on-primary-container)' }} />
+                </div>
                 <div>
-                  <h2 className="text-sm sm:text-base font-extrabold text-stone-900 font-['Space_Grotesk'] tracking-tight">
+                  <h2
+                    className="text-base font-bold font-display tracking-tight"
+                    style={{ color: 'var(--md-on-surface)' }}
+                  >
                     AI Outfit Stylist
                   </h2>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-xs" style={{ color: 'var(--md-on-surface-variant)' }}>
                     Weather-aware outfit recommendations from your wardrobe
                   </p>
                 </div>
               </div>
 
-              {/* Model Source Toggle */}
-              <div className="flex items-center bg-stone-100 p-0.5 rounded-xl border border-[#e7e2d9]">
+              {/* Model Source Toggle — Segmented */}
+              <div
+                className="flex items-center p-0.5 rounded-xl"
+                style={{ backgroundColor: 'var(--md-surface-container-high)' }}
+              >
                 <button
                   onClick={() => {
                     setModelSource('custom');
                     if (!userProfile.uploadedTryOnPhoto) fileInputRef.current?.click();
                   }}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                    modelSource === 'custom'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-500'
-                  }`}
+                  className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all"
+                  style={{
+                    backgroundColor: modelSource === 'custom' ? 'var(--md-surface-container-lowest)' : 'transparent',
+                    color: modelSource === 'custom' ? 'var(--md-on-surface)' : 'var(--md-on-surface-variant)',
+                    boxShadow: modelSource === 'custom' ? 'var(--elevation-1)' : 'none',
+                  }}
                 >
                   <Camera className="w-3 h-3 inline mr-1" />
                   My Photo
                 </button>
                 <button
                   onClick={() => setModelSource('studio')}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                    modelSource === 'studio'
-                      ? 'bg-white text-stone-900 shadow-xs'
-                      : 'text-stone-500'
-                  }`}
+                  className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all"
+                  style={{
+                    backgroundColor: modelSource === 'studio' ? 'var(--md-surface-container-lowest)' : 'transparent',
+                    color: modelSource === 'studio' ? 'var(--md-on-surface)' : 'var(--md-on-surface-variant)',
+                    boxShadow: modelSource === 'studio' ? 'var(--elevation-1)' : 'none',
+                  }}
                 >
                   <User className="w-3 h-3 inline mr-1" />
                   Model
@@ -349,9 +366,12 @@ export const VirtualTryOnView: React.FC = () => {
           />
 
           {/* Occasion Notes + Generate */}
-          <div className="bg-white border border-[#e7e2d9] rounded-3xl p-3.5 shadow-xs space-y-2.5">
+          <div
+            className="rounded-3xl p-3.5 md-elevation-1 space-y-2.5"
+            style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+          >
             <div>
-              <label className="text-[11px] font-bold text-stone-600 block mb-1">
+              <label className="text-xs font-bold block mb-1" style={{ color: 'var(--md-on-surface-variant)' }}>
                 Special notes or vibe (optional)
               </label>
               <input
@@ -359,14 +379,19 @@ export const VirtualTryOnView: React.FC = () => {
                 value={occasionNotes}
                 onChange={(e) => setOccasionNotes(e.target.value)}
                 placeholder="e.g., Casual lunch outdoors, client meeting..."
-                className="w-full px-3 py-2 text-xs bg-stone-50 border border-[#e7e2d9] rounded-xl text-stone-900 focus:outline-none focus:border-[#8c5836]"
+                className="w-full px-3 py-2.5 text-sm rounded-xl focus:outline-none"
+                style={{
+                  backgroundColor: 'var(--md-surface-container-high)',
+                  color: 'var(--md-on-surface)',
+                }}
               />
             </div>
 
             <button
               onClick={handleGenerateRecommendations}
               disabled={isGeneratingRecommendations}
-              className="w-full py-2.5 bg-gradient-to-r from-[#8c5836] to-[#a16b47] hover:from-[#784a2c] hover:to-[#8c5836] text-white rounded-xl text-xs font-bold shadow-md shadow-[#8c5836]/20 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+              className="w-full py-3 rounded-full text-sm font-bold md-elevation-1 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
             >
               <Sparkles className={`w-4 h-4 ${isGeneratingRecommendations ? 'animate-spin' : ''}`} />
               <span>
@@ -391,42 +416,45 @@ export const VirtualTryOnView: React.FC = () => {
           {/* Quick Access to Dressing Room */}
           <button
             onClick={() => setMainScreenMode('dressing-room')}
-            className="w-full py-3 bg-white border border-[#e7e2d9] rounded-2xl text-xs font-bold text-stone-700 flex items-center justify-center space-x-2 shadow-xs hover:bg-stone-50 transition-colors"
+            className="w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 md-elevation-1 transition-colors"
+            style={{
+              backgroundColor: 'var(--md-surface-container)',
+              color: 'var(--md-on-surface)',
+            }}
           >
-            <Shirt className="w-4 h-4 text-[#8c5836]" />
+            <Shirt className="w-4 h-4" style={{ color: 'var(--md-primary)' }} />
             <span>Open Virtual Dressing Room</span>
-            <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+            <ArrowRight className="w-3.5 h-3.5" style={{ color: 'var(--md-on-surface-variant)' }} />
           </button>
         </>
       )}
 
       {/* Item Swap Drawer */}
-      {swapDrawerOpen && (
-        <ItemSwapDrawer
-          classification={swapClassification}
-          currentItemId={swapCurrentItemId}
-          onSelectItem={handleSelectSwapItem}
-          onClose={() => setSwapDrawerOpen(false)}
-        />
-      )}
+      <ItemSwapDrawer
+        isOpen={swapDrawerOpen}
+        classification={swapClassification}
+        currentItemId={swapCurrentItemId}
+        onSelectItem={handleSelectSwapItem}
+        onClose={() => setSwapDrawerOpen(false)}
+      />
 
       {/* Fit Analysis Modal */}
-      {showFitAnalysis && fitAnalysisResult && (
-        <FitAnalysisModal
-          result={fitAnalysisResult}
-          onClose={() => {
-            setShowFitAnalysis(false);
-            setFitAnalysisResult(null);
-          }}
-          onReEvaluate={handleReEvaluateFit}
-          isReEvaluating={isLoadingFitAnalysis}
-        />
-      )}
+      <FitAnalysisModal
+        isOpen={showFitAnalysis && !!fitAnalysisResult}
+        result={fitAnalysisResult!}
+        onClose={() => {
+          setShowFitAnalysis(false);
+          setFitAnalysisResult(null);
+        }}
+        onReEvaluate={handleReEvaluateFit}
+        isReEvaluating={isLoadingFitAnalysis}
+      />
 
       {/* Categories Management Modal */}
-      {isCategoryModalOpen && (
-        <ManageCategoriesModal onClose={() => setIsCategoryModalOpen(false)} />
-      )}
+      <ManageCategoriesModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+      />
     </div>
   );
 };

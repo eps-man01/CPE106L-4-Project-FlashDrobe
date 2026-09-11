@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConnectivityProvider, useConnectivity } from './context/ConnectivityContext';
 import { ConnectivityOverlay } from './components/ConnectivityOverlay';
@@ -11,6 +11,7 @@ import { ProfileView } from './components/profile/ProfileView';
 import { VirtualTryOnView } from './components/tryon/VirtualTryOnView';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { useDeviceLayout } from './hooks/useDeviceLayout';
+import { useColorScheme } from './hooks/useColorScheme';
 import { Loader2, WifiOff } from 'lucide-react';
 
 function ConnectivityGate({ children }: { children: React.ReactNode }) {
@@ -18,13 +19,28 @@ function ConnectivityGate({ children }: { children: React.ReactNode }) {
 
   if (isChecking) {
     return (
-      <div className="min-h-screen bg-[#f9f6f0] flex flex-col items-center justify-center">
-        <div className="bg-white border border-[#e7e2d9] rounded-3xl p-8 shadow-lg flex flex-col items-center text-center max-w-xs mx-4">
-          <Loader2 className="w-8 h-8 text-[#8c5836] animate-spin mb-3" />
-          <h2 className="text-sm font-extrabold text-stone-900 font-['Space_Grotesk']">
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{ backgroundColor: 'var(--md-surface)' }}
+      >
+        <div
+          className="rounded-3xl p-8 flex flex-col items-center text-center max-w-xs mx-4 md-elevation-3"
+          style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+        >
+          <Loader2
+            className="w-8 h-8 animate-spin mb-3"
+            style={{ color: 'var(--md-primary)' }}
+          />
+          <h2
+            className="text-base font-bold font-display"
+            style={{ color: 'var(--md-on-surface)' }}
+          >
             Checking connection...
           </h2>
-          <p className="text-[11px] text-stone-500 mt-1">
+          <p
+            className="text-xs mt-1"
+            style={{ color: 'var(--md-on-surface-variant)' }}
+          >
             Flashdrobe needs internet to run
           </p>
         </div>
@@ -34,19 +50,40 @@ function ConnectivityGate({ children }: { children: React.ReactNode }) {
 
   if (!isOnline) {
     return (
-      <div className="min-h-screen bg-[#f9f6f0] flex flex-col items-center justify-center">
-        <div className="bg-white border border-[#e7e2d9] rounded-3xl p-8 shadow-lg flex flex-col items-center text-center max-w-xs mx-4">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mb-4">
-            <WifiOff className="w-7 h-7 text-red-500" />
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{ backgroundColor: 'var(--md-surface)' }}
+      >
+        <div
+          className="rounded-3xl p-8 flex flex-col items-center text-center max-w-xs mx-4 md-elevation-3"
+          style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+        >
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+            style={{
+              backgroundColor: 'var(--md-error-container)',
+              color: 'var(--md-on-error-container)',
+            }}
+          >
+            <WifiOff className="w-7 h-7" />
           </div>
-          <h2 className="text-base font-extrabold text-stone-900 mb-1 font-['Space_Grotesk']">
+          <h2
+            className="text-lg font-bold font-display mb-1"
+            style={{ color: 'var(--md-on-surface)' }}
+          >
             No Internet Connection
           </h2>
-          <p className="text-xs text-stone-500 mb-4">
+          <p
+            className="text-xs mb-4"
+            style={{ color: 'var(--md-on-surface-variant)' }}
+          >
             Flashdrobe requires an active internet connection. Please check your network and try again.
           </p>
-          <div className="flex items-center space-x-2 text-[11px] text-stone-400 font-medium">
-            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+            <div
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{ backgroundColor: 'var(--md-warning)' }}
+            />
             <span>Waiting for connection...</span>
           </div>
         </div>
@@ -61,20 +98,35 @@ function AppContent() {
   const { activeTab, isAuthenticated, isAuthLoading } = useWardrobe();
   const { isOnline } = useConnectivity();
   const device = useDeviceLayout();
+  useColorScheme(); // Initialize palette from localStorage
 
   const isTablet = device.effectiveIsTablet;
   const isLandscape = device.effectiveOrientation === 'landscape';
 
-  // Show loading while checking auth state
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-[#f9f6f0] flex flex-col items-center justify-center">
-        <div className="bg-white border border-[#e7e2d9] rounded-3xl p-8 shadow-lg flex flex-col items-center text-center max-w-xs mx-4">
-          <Loader2 className="w-8 h-8 text-[#8c5836] animate-spin mb-3" />
-          <h2 className="text-sm font-extrabold text-stone-900 font-['Space_Grotesk']">
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{ backgroundColor: 'var(--md-surface)' }}
+      >
+        <div
+          className="rounded-3xl p-8 flex flex-col items-center text-center max-w-xs mx-4 md-elevation-3"
+          style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+        >
+          <Loader2
+            className="w-8 h-8 animate-spin mb-3"
+            style={{ color: 'var(--md-primary)' }}
+          />
+          <h2
+            className="text-base font-bold font-display"
+            style={{ color: 'var(--md-on-surface)' }}
+          >
             Loading Flashdrobe...
           </h2>
-          <p className="text-[11px] text-stone-500 mt-1">
+          <p
+            className="text-xs mt-1"
+            style={{ color: 'var(--md-on-surface-variant)' }}
+          >
             Setting up your wardrobe
           </p>
         </div>
@@ -84,9 +136,12 @@ function AppContent() {
 
   if (!isAuthenticated) {
     return (
-      <div className={`min-h-screen bg-[#f9f6f0] text-stone-900 flex flex-col mx-auto relative transition-all duration-300 ${
-        isTablet ? 'w-full max-w-4xl py-6 px-4' : 'w-full max-w-lg border-x border-[#e7e2d9]'
-      }`}>
+      <div
+        className={`min-h-screen text-stone-900 flex flex-col mx-auto relative transition-all duration-300 ${
+          isTablet ? 'w-full max-w-4xl py-6 px-4' : 'w-full max-w-lg'
+        }`}
+        style={{ backgroundColor: 'var(--md-surface)' }}
+      >
         <AuthScreen />
       </div>
     );
@@ -112,27 +167,28 @@ function AppContent() {
   return (
     <div
       id="app-root-container"
-      className={`min-h-screen bg-[#f9f6f0] text-stone-900 flex flex-col mx-auto relative transition-all duration-200 ${
+      className={`min-h-screen text-stone-900 flex flex-col mx-auto relative transition-all duration-200 ${
         isTablet
           ? isLandscape
             ? 'w-full max-w-7xl'
             : 'w-full max-w-4xl'
-          : 'w-full max-w-lg border-x border-[#e7e2d9] shadow-xs'
+          : 'w-full max-w-lg'
       }`}
+      style={{ backgroundColor: 'var(--md-surface)' }}
     >
       <div className="flex flex-col flex-1 min-h-screen relative w-full overflow-x-hidden">
         <AndroidHeader />
 
-        <main className={`flex-1 overflow-y-auto no-scrollbar bg-[#f9f6f0] ${
+        <main className={`flex-1 overflow-y-auto no-scrollbar ${
           isTablet ? 'px-4 sm:px-6 md:px-8 pt-4' : 'px-4 pt-3'
         }`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
               {renderActiveScreen()}
             </motion.div>

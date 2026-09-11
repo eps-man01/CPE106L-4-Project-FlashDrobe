@@ -22,10 +22,12 @@ import { useWardrobe } from '../../context/WardrobeContext';
 import { ClothingClassification, ClothingItem } from '../../types';
 import { AddClothingModal } from './AddClothingModal';
 import { ClothingDetailModal } from './ClothingDetailModal';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 export const WardrobeView: React.FC = () => {
   const { wardrobe, toggleFavoriteItem, deleteClothingItem, resetAllData } = useWardrobe();
   const [itemToDelete, setItemToDelete] = useState<ClothingItem | null>(null);
+  const [shouldRenderDelete, isDeleteExiting] = useDelayedRender(!!itemToDelete);
 
   const [selectedClassification, setSelectedClassification] = useState<
     ClothingClassification | 'All'
@@ -44,7 +46,6 @@ export const WardrobeView: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  // Classification counts
   const counts = useMemo(() => {
     return {
       All: wardrobe.length,
@@ -56,7 +57,6 @@ export const WardrobeView: React.FC = () => {
     };
   }, [wardrobe]);
 
-  // Extract all unique tags
   const allTags = useMemo(() => {
     const set = new Set<string>();
     wardrobe.forEach((item) => {
@@ -65,22 +65,11 @@ export const WardrobeView: React.FC = () => {
     return Array.from(set);
   }, [wardrobe]);
 
-  // Filtered items
   const filteredItems = useMemo(() => {
     return wardrobe.filter((item) => {
-      // Classification filter
-      if (selectedClassification !== 'All' && item.classification !== selectedClassification) {
-        return false;
-      }
-      // Favorites filter
-      if (onlyFavorites && !item.isFavorite) {
-        return false;
-      }
-      // Tag filter
-      if (selectedTagFilter && !item.tags.includes(selectedTagFilter)) {
-        return false;
-      }
-      // Search query
+      if (selectedClassification !== 'All' && item.classification !== selectedClassification) return false;
+      if (onlyFavorites && !item.isFavorite) return false;
+      if (selectedTagFilter && !item.tags.includes(selectedTagFilter)) return false;
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchName = item.name.toLowerCase().includes(query);
@@ -88,39 +77,37 @@ export const WardrobeView: React.FC = () => {
         const matchBrand = item.brand?.toLowerCase().includes(query) || false;
         const matchTags = item.tags.some((t) => t.toLowerCase().includes(query));
         const matchColor = item.colorName.toLowerCase().includes(query);
-        if (!matchName && !matchSub && !matchBrand && !matchTags && !matchColor) {
-          return false;
-        }
+        if (!matchName && !matchSub && !matchBrand && !matchTags && !matchColor) return false;
       }
       return true;
     });
   }, [wardrobe, selectedClassification, onlyFavorites, selectedTagFilter, searchQuery]);
 
   return (
-    <div id="wardrobe-view-root" className="space-y-4 pb-24 text-stone-900">
-      {/* User Input & Upload Quick Action Header Card */}
-      <div className="bg-white border border-[#e7e2d9] rounded-3xl p-4 shadow-xs space-y-3">
+    <div id="wardrobe-view-root" className="space-y-4 pb-24" style={{ color: 'var(--md-on-surface)' }}>
+      {/* Add Clothing Header Card */}
+      <div className="rounded-3xl p-4 md-elevation-1 space-y-3" style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-[#f5ede3] border border-[#e5dec9] flex items-center justify-center text-[#8c5836]">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)' }}>
               <Camera className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-xs font-extrabold text-stone-900">Add Clothing to Closet</h3>
-              <p className="text-[11px] text-stone-500">Capture with camera or choose from gallery</p>
+              <h3 className="text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>Add Clothing to Closet</h3>
+              <p className="text-[11px]" style={{ color: 'var(--md-on-surface-variant)' }}>Capture with camera or choose from gallery</p>
             </div>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0e9df] text-[#784a2c] border border-[#ddcfbe]">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)' }}>
             {wardrobe.length} Items
           </span>
         </div>
 
-        {/* Dual Primary Upload Actions: Camera & Gallery */}
         <div className="grid grid-cols-2 gap-2.5">
           <button
             id="btn-quick-snap-camera"
             onClick={() => openAddWithMode('camera')}
-            className="flex items-center justify-center space-x-2 py-2.5 px-3 bg-[#8c5836] hover:bg-[#784a2c] text-white font-bold text-xs rounded-2xl shadow-sm shadow-[#8c5836]/20 transition-all active:scale-98"
+            className="flex items-center justify-center gap-2 py-2.5 px-3 font-bold text-xs rounded-2xl md-elevation-1 transition-all active:scale-98"
+            style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
           >
             <Camera className="w-4 h-4" />
             <span>Snap Camera</span>
@@ -129,9 +116,10 @@ export const WardrobeView: React.FC = () => {
           <button
             id="btn-quick-upload-gallery"
             onClick={() => openAddWithMode('upload')}
-            className="flex items-center justify-center space-x-2 py-2.5 px-3 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs rounded-2xl border border-[#e7e2d9] shadow-2xs transition-all active:scale-98"
+            className="flex items-center justify-center gap-2 py-2.5 px-3 font-bold text-xs rounded-2xl md-elevation-1 transition-all active:scale-98"
+            style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
           >
-            <FolderOpen className="w-4 h-4 text-[#8c5836]" />
+            <FolderOpen className="w-4 h-4" style={{ color: 'var(--md-primary)' }} />
             <span>Phone Gallery</span>
           </button>
         </div>
@@ -139,54 +127,55 @@ export const WardrobeView: React.FC = () => {
 
       {/* Search and Filter Row */}
       <div className="space-y-2">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--md-on-surface-variant)' }} />
             <input
               type="text"
               id="wardrobe-search-input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search clothes, tags, colors, brands..."
-              className="w-full bg-white border border-[#e7e2d9] rounded-2xl pl-9 pr-4 py-2.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#8c5836] focus:ring-1 focus:ring-[#8c5836]/30 shadow-xs"
+              className="w-full rounded-2xl pl-9 pr-4 py-2.5 text-xs md-elevation-1 focus:outline-none"
+              style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-700 font-semibold"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold"
+                style={{ color: 'var(--md-on-surface-variant)' }}
               >
                 Clear
               </button>
             )}
           </div>
 
-          {/* Favorite Toggle Filter */}
           <button
             id="btn-filter-favorites"
             onClick={() => setOnlyFavorites(!onlyFavorites)}
             title={onlyFavorites ? 'Show all items' : 'Show favorites only'}
-            className={`p-2.5 rounded-2xl border transition-all shadow-xs ${
-              onlyFavorites
-                ? 'bg-rose-50 border-rose-300 text-rose-600'
-                : 'bg-white border-[#e7e2d9] text-stone-600 hover:text-stone-900'
-            }`}
+            className="p-2.5 rounded-2xl transition-all md-elevation-1"
+            style={{
+              backgroundColor: onlyFavorites ? 'var(--md-error-container)' : 'var(--md-surface-container-lowest)',
+              color: onlyFavorites ? 'var(--md-on-error-container)' : 'var(--md-on-surface-variant)',
+            }}
           >
-            <Heart className={`w-4 h-4 ${onlyFavorites ? 'fill-rose-500 text-rose-500' : ''}`} />
+            <Heart className={`w-4 h-4 ${onlyFavorites ? 'fill-current' : ''}`} />
           </button>
 
-          {/* View mode toggle */}
           <button
             id="btn-toggle-view-mode"
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
             title="Toggle Grid / List View"
-            className="p-2.5 rounded-2xl bg-white border border-[#e7e2d9] text-stone-600 hover:text-stone-900 transition-colors shadow-xs"
+            className="p-2.5 rounded-2xl transition-colors md-elevation-1"
+            style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface-variant)' }}
           >
             {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid2X2 className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Classification Filter Pills Carousel */}
-        <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1">
+        {/* Classification Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
           {(
             ['All', 'Tops', 'Bottoms', 'Footwear', 'Outerwear', 'Accessories'] as (
               | ClothingClassification
@@ -201,17 +190,19 @@ export const WardrobeView: React.FC = () => {
                 key={cls}
                 id={`filter-pill-${cls.toLowerCase()}`}
                 onClick={() => setSelectedClassification(cls)}
-                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 border shadow-xs ${
-                  isSelected
-                    ? 'bg-[#8c5836] text-white border-[#8c5836] shadow-[#8c5836]/20 font-bold'
-                    : 'bg-white text-stone-700 border-[#e7e2d9] hover:bg-stone-50 hover:text-stone-900'
-                }`}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200"
+                style={{
+                  backgroundColor: isSelected ? 'var(--md-primary)' : 'var(--md-surface-container-lowest)',
+                  color: isSelected ? 'var(--md-on-primary)' : 'var(--md-on-surface)',
+                }}
               >
                 <span>{cls}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    isSelected ? 'bg-white/25 text-white' : 'bg-stone-100 text-stone-600'
-                  }`}
+                  className="text-[10px] px-1.5 py-0.2 rounded-full font-bold"
+                  style={{
+                    backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--md-surface-container)',
+                    color: isSelected ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
+                  }}
                 >
                   {count}
                 </span>
@@ -220,11 +211,11 @@ export const WardrobeView: React.FC = () => {
           })}
         </div>
 
-        {/* Tag Filters Horizontal Bar */}
+        {/* Tag Filters */}
         {allTags.length > 0 && (
-          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pt-0.5">
-            <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider flex items-center space-x-1 pl-1">
-              <Tag className="w-3 h-3 text-stone-500" />
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 pl-1" style={{ color: 'var(--md-on-surface-variant)' }}>
+              <Tag className="w-3 h-3" />
               <span>Tags:</span>
             </span>
             {allTags.map((tag) => {
@@ -233,11 +224,11 @@ export const WardrobeView: React.FC = () => {
                 <button
                   key={tag}
                   onClick={() => setSelectedTagFilter(isActive ? null : tag)}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors border shadow-2xs ${
-                    isActive
-                      ? 'bg-[#f0e9df] text-[#784a2c] border-[#ddcfbe] font-bold'
-                      : 'bg-white border-[#e7e2d9] text-stone-600 hover:text-stone-900'
-                  }`}
+                  className="px-2.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors"
+                  style={{
+                    backgroundColor: isActive ? 'var(--md-secondary-container)' : 'var(--md-surface-container-lowest)',
+                    color: isActive ? 'var(--md-on-secondary-container)' : 'var(--md-on-surface-variant)',
+                  }}
                 >
                   {tag}
                 </button>
@@ -247,18 +238,19 @@ export const WardrobeView: React.FC = () => {
         )}
       </div>
 
-      {/* Grid or List Display of Wardrobe Items */}
+      {/* Wardrobe Items Display */}
       {filteredItems.length === 0 ? (
         <div
           id="wardrobe-empty-state"
-          className="text-center py-12 px-4 rounded-3xl bg-white border border-[#e7e2d9] flex flex-col items-center justify-center space-y-3 shadow-xs"
+          className="text-center py-12 px-4 rounded-3xl flex flex-col items-center justify-center space-y-3 md-elevation-1"
+          style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
         >
-          <div className="w-14 h-14 rounded-2xl bg-[#f5ede3] border border-[#e5dec9] flex items-center justify-center">
-            <Camera className="w-7 h-7 text-[#8c5836]" />
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'var(--md-primary-container)' }}>
+            <Camera className="w-7 h-7" style={{ color: 'var(--md-on-primary-container)' }} />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-stone-900">Your Wardrobe is Ready</h4>
-            <p className="text-xs text-stone-500 mt-1 max-w-xs">
+            <h4 className="text-sm font-bold" style={{ color: 'var(--md-on-surface)' }}>Your Wardrobe is Ready</h4>
+            <p className="text-xs mt-1 max-w-xs" style={{ color: 'var(--md-on-surface-variant)' }}>
               {searchQuery || selectedTagFilter || onlyFavorites
                 ? 'No items matched your search filters.'
                 : 'Snap a photo with your camera or select from your gallery to add your clothes.'}
@@ -267,16 +259,18 @@ export const WardrobeView: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             <button
               onClick={() => openAddWithMode('camera')}
-              className="px-4 py-2 bg-[#8c5836] hover:bg-[#784a2c] text-white font-bold rounded-2xl text-xs shadow-md flex items-center space-x-1.5 transition-all"
+              className="px-4 py-2 font-bold rounded-2xl text-xs md-elevation-1 flex items-center gap-1.5 transition-all"
+              style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
             >
               <Camera className="w-4 h-4" />
               <span>Take Photo (Camera)</span>
             </button>
             <button
               onClick={() => openAddWithMode('upload')}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold rounded-2xl text-xs border border-[#e7e2d9] flex items-center space-x-1.5 transition-all"
+              className="px-4 py-2 font-bold rounded-2xl text-xs md-elevation-1 flex items-center gap-1.5 transition-all"
+              style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
             >
-              <FolderOpen className="w-4 h-4 text-[#8c5836]" />
+              <FolderOpen className="w-4 h-4" style={{ color: 'var(--md-primary)' }} />
               <span>Upload Gallery</span>
             </button>
           </div>
@@ -301,10 +295,10 @@ export const WardrobeView: React.FC = () => {
                 visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } }
               }}
               whileTap={{ scale: 0.97 }}
-              className="group relative bg-white border border-[#e7e2d9] hover:border-stone-400 rounded-3xl overflow-hidden shadow-xs material-elevation cursor-pointer flex flex-col"
+              className="group relative rounded-3xl overflow-hidden md-elevation-1 cursor-pointer flex flex-col"
+              style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
             >
-              {/* Image Container */}
-              <div className="relative aspect-square w-full bg-stone-100 overflow-hidden">
+              <div className="relative aspect-square w-full overflow-hidden" style={{ backgroundColor: 'var(--md-surface-container)' }}>
                 <img
                   src={item.imageUrl}
                   alt={item.name}
@@ -313,43 +307,31 @@ export const WardrobeView: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10"></div>
 
-                {/* Classification Pill */}
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-[10px] font-bold text-stone-800 border border-[#e7e2d9] shadow-xs">
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold md-elevation-1" style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface)', opacity: 0.9 }}>
                   {item.classification}
                 </span>
 
-                {/* Top Action Buttons (Favorite + Quick Delete) */}
-                <div className="absolute top-2 right-2 flex items-center space-x-1">
+                <div className="absolute top-2 right-2 flex items-center gap-1">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setItemToDelete(item);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setItemToDelete(item); }}
                     title="Delete item"
-                    className="p-1.5 rounded-full bg-white/90 backdrop-blur-md text-stone-500 hover:text-rose-600 transition-colors border border-[#e7e2d9] shadow-xs hover:bg-rose-50"
+                    className="p-1.5 rounded-full md-elevation-1 transition-colors"
+                    style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface-variant)', opacity: 0.9 }}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavoriteItem(item.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); toggleFavoriteItem(item.id); }}
                     title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                    className="p-1.5 rounded-full bg-white/90 backdrop-blur-md text-stone-700 hover:text-rose-500 transition-colors border border-[#e7e2d9] shadow-xs"
+                    className="p-1.5 rounded-full md-elevation-1 transition-colors"
+                    style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: item.isFavorite ? 'var(--md-tertiary)' : 'var(--md-on-surface-variant)', opacity: 0.9 }}
                   >
-                    <Heart
-                      className={`w-3.5 h-3.5 ${
-                        item.isFavorite ? 'fill-rose-500 text-rose-500' : 'text-stone-600'
-                      }`}
-                    />
+                    <Heart className={`w-3.5 h-3.5 ${item.isFavorite ? 'fill-current' : ''}`} />
                   </button>
                 </div>
 
-                {/* Warmth & Season Badges */}
                 <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[10px]">
-                  <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-amber-200 border border-white/10">
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-amber-200">
                     <Thermometer className="w-2.5 h-2.5 text-amber-300" />
                     <span className="font-semibold">{item.warmthLevel}/5</span>
                   </div>
@@ -361,25 +343,22 @@ export const WardrobeView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Item Details */}
               <div className="p-3 flex-1 flex flex-col justify-between">
                 <div>
-                  <p className="text-[10px] text-[#8c5836] font-extrabold tracking-wider uppercase truncate">
+                  <p className="text-[10px] font-extrabold tracking-wider uppercase truncate" style={{ color: 'var(--md-primary)' }}>
                     {item.subType}
                   </p>
-                  <h4 className="text-xs font-bold text-stone-900 line-clamp-1 group-hover:text-[#8c5836] transition-colors mt-0.5">
+                  <h4 className="text-xs font-bold line-clamp-1 mt-0.5" style={{ color: 'var(--md-on-surface)' }}>
                     {item.name}
                   </h4>
                 </div>
-
-                {/* Tags preview */}
                 {item.tags.length > 0 && (
-                  <div className="flex items-center space-x-1 mt-2 overflow-hidden">
-                    <span className="text-[10px] text-stone-600 bg-stone-100 px-1.5 py-0.2 rounded font-medium truncate border border-[#e7e2d9]">
+                  <div className="flex items-center gap-1 mt-2 overflow-hidden">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded font-medium truncate" style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)' }}>
                       {item.tags[0]}
                     </span>
                     {item.tags.length > 1 && (
-                      <span className="text-[9px] text-stone-400 font-semibold">
+                      <span className="text-[9px] font-semibold" style={{ color: 'var(--md-on-surface-variant)' }}>
                         +{item.tags.length - 1}
                       </span>
                     )}
@@ -396,23 +375,25 @@ export const WardrobeView: React.FC = () => {
             <div
               key={item.id}
               onClick={() => setSelectedItemForDetail(item)}
-              className="bg-white border border-[#e7e2d9] hover:border-stone-400 rounded-3xl p-3 flex items-center space-x-3 transition-all cursor-pointer shadow-xs"
+              className="rounded-3xl p-3 flex items-center gap-3 transition-all cursor-pointer md-elevation-1"
+              style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
             >
               <img
                 src={item.imageUrl}
                 alt={item.name}
-                className="w-14 h-14 object-cover rounded-2xl border border-[#e7e2d9] flex-shrink-0"
+                className="w-14 h-14 object-cover rounded-2xl flex-shrink-0"
+                style={{ border: `1px solid var(--md-outline-variant)` }}
               />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-1.5">
-                  <span className="text-[10px] font-bold text-[#784a2c] uppercase px-1.5 py-0.2 bg-[#f0e9df] rounded border border-[#ddcfbe]">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.2 rounded" style={{ backgroundColor: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)' }}>
                     {item.classification}
                   </span>
-                  <span className="text-[10px] text-stone-500 font-medium">{item.subType}</span>
+                  <span className="text-[10px] font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{item.subType}</span>
                 </div>
-                <h4 className="text-xs font-bold text-stone-900 truncate mt-0.5">{item.name}</h4>
-                <div className="flex items-center space-x-2 mt-1 text-[10px] text-stone-500">
-                  <span className="flex items-center space-x-1">
+                <h4 className="text-xs font-bold truncate mt-0.5" style={{ color: 'var(--md-on-surface)' }}>{item.name}</h4>
+                <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  <span className="flex items-center gap-1">
                     <Thermometer className="w-2.5 h-2.5 text-amber-500" />
                     <span>Warmth: {item.warmthLevel}/5</span>
                   </span>
@@ -420,29 +401,22 @@ export const WardrobeView: React.FC = () => {
                   <span>Worn {item.wearCount}x</span>
                 </div>
               </div>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center gap-1">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setItemToDelete(item);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); setItemToDelete(item); }}
                   title="Delete item"
-                  className="p-2 text-stone-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors"
+                  className="p-2 rounded-xl transition-colors"
+                  style={{ color: 'var(--md-on-surface-variant)' }}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
-
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavoriteItem(item.id);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); toggleFavoriteItem(item.id); }}
                   title={item.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                  className="p-2 text-stone-400 hover:text-rose-500 rounded-xl hover:bg-rose-50 transition-colors"
+                  className="p-2 rounded-xl transition-colors"
+                  style={{ color: item.isFavorite ? 'var(--md-tertiary)' : 'var(--md-on-surface-variant)' }}
                 >
-                  <Heart
-                    className={`w-4 h-4 ${item.isFavorite ? 'fill-rose-500 text-rose-500' : ''}`}
-                  />
+                  <Heart className={`w-4 h-4 ${item.isFavorite ? 'fill-current' : ''}`} />
                 </button>
               </div>
             </div>
@@ -450,54 +424,51 @@ export const WardrobeView: React.FC = () => {
         </div>
       )}
 
-      {/* Add Clothing Modal */}
       <AddClothingModal
         isOpen={isAddModalOpen}
         initialMode={addModalMode}
         onClose={() => setIsAddModalOpen(false)}
       />
 
-      {/* Clothing Detail Modal */}
       <ClothingDetailModal
         item={selectedItemForDetail}
         onClose={() => setSelectedItemForDetail(null)}
       />
 
-      {/* Delete Item Confirmation Dialog */}
-      {itemToDelete && (
-        <div
-          id="delete-confirmation-modal"
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4"
-        >
-          <div className="bg-white border border-[#e7e2d9] rounded-3xl p-5 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 flex-shrink-0">
+      {/* Delete Confirmation Dialog */}
+      {shouldRenderDelete && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm ${isDeleteExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`} style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
+          <div className={`rounded-3xl p-5 max-w-sm w-full md-elevation-5 space-y-4 ${isDeleteExiting ? 'animate-md-exit' : 'animate-md-sheet'}`} style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--md-error-container)', color: 'var(--md-on-error-container)' }}>
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-sm font-extrabold text-stone-900">Delete Clothing Item?</h4>
-                <p className="text-xs text-stone-500">This will remove it from your digital closet.</p>
+                <h4 className="text-sm font-bold" style={{ color: 'var(--md-on-surface)' }}>Delete Clothing Item?</h4>
+                <p className="text-xs" style={{ color: 'var(--md-on-surface-variant)' }}>This will remove it from your digital closet.</p>
               </div>
             </div>
 
-            <div className="p-3 bg-stone-50 border border-[#e7e2d9] rounded-2xl flex items-center space-x-3">
+            <div className="p-3 rounded-2xl flex items-center gap-3" style={{ backgroundColor: 'var(--md-surface-container)' }}>
               <img
                 src={itemToDelete.imageUrl}
                 alt={itemToDelete.name}
-                className="w-12 h-12 object-cover rounded-xl border border-[#e7e2d9]"
+                className="w-12 h-12 object-cover rounded-xl"
+                style={{ border: `1px solid var(--md-outline-variant)` }}
               />
               <div className="min-w-0 flex-1">
-                <span className="text-[10px] uppercase font-bold text-[#8c5836]">
+                <span className="text-[10px] uppercase font-bold" style={{ color: 'var(--md-primary)' }}>
                   {itemToDelete.classification} • {itemToDelete.subType}
                 </span>
-                <h5 className="text-xs font-bold text-stone-800 truncate">{itemToDelete.name}</h5>
+                <h5 className="text-xs font-bold truncate" style={{ color: 'var(--md-on-surface)' }}>{itemToDelete.name}</h5>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 onClick={() => setItemToDelete(null)}
-                className="py-2.5 rounded-xl border border-[#e7e2d9] text-xs font-bold text-stone-700 hover:bg-stone-100 transition-colors"
+                className="py-2.5 rounded-xl text-xs font-bold transition-colors"
+                style={{ border: `1px solid var(--md-outline-variant)`, color: 'var(--md-on-surface)' }}
               >
                 Cancel
               </button>
@@ -506,7 +477,8 @@ export const WardrobeView: React.FC = () => {
                   deleteClothingItem(itemToDelete.id);
                   setItemToDelete(null);
                 }}
-                className="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white shadow-xs transition-colors"
+                className="py-2.5 rounded-xl text-xs font-bold transition-colors"
+                style={{ backgroundColor: 'var(--md-error)', color: 'var(--md-on-error)' }}
               >
                 Delete Item
               </button>

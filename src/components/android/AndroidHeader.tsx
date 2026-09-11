@@ -41,42 +41,80 @@ export const AndroidHeader: React.FC<AndroidHeaderProps> = () => {
   return (
     <header
       id="android-top-app-bar"
-      className="sticky top-0 bg-[#f9f6f0]/95 backdrop-blur-md px-4 md:px-6 py-2.5 z-30 border-b border-[#e7e2d9] flex items-center justify-between transition-all"
+      className="sticky top-0 z-30 flex items-center justify-between px-5 py-3 transition-all"
+      style={{
+        backgroundColor: 'color-mix(in srgb, var(--md-surface) 85%, transparent)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid var(--md-outline-variant)',
+      }}
     >
-      <div className="flex items-center space-x-3">
-        {/* App Logo */}
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#8c5836] via-[#a16b47] to-[#784a2c] flex items-center justify-center shadow-md shadow-[#8c5836]/20 flex-shrink-0">
-          <Sparkles className="w-4 h-4 text-white stroke-[2.5]" />
+      <div className="flex items-center gap-3">
+        {/* App Logo — Tonal Primary */}
+        <div
+          className="w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: 'var(--md-primary-container)' }}
+        >
+          <Sparkles
+            className="w-5 h-5 stroke-[2.5]"
+            style={{ color: 'var(--md-on-primary-container)' }}
+          />
         </div>
         <div>
-          <div className="flex items-center space-x-1.5">
-            <span className="font-extrabold text-sm tracking-tight text-stone-900 font-['Space_Grotesk']">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="font-bold text-base tracking-tight font-display"
+              style={{ color: 'var(--md-on-surface)' }}
+            >
               Flashdrobe
             </span>
-            <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.2 bg-[#f0e9df] text-[#784a2c] border border-[#ddcfbe] rounded">
+            <span
+              className="text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full"
+              style={{
+                backgroundColor: 'var(--md-surface-container-high)',
+                color: 'var(--md-on-surface-variant)',
+              }}
+            >
               D-PWA
             </span>
             {!isOnline && (
-              <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.2 bg-red-50 text-red-600 border border-red-200 rounded flex items-center space-x-1">
+              <span
+                className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
+                style={{
+                  backgroundColor: 'var(--md-error-container)',
+                  color: 'var(--md-on-error-container)',
+                }}
+              >
                 <WifiOff className="w-2.5 h-2.5" />
                 <span>Offline</span>
               </span>
             )}
           </div>
-          <p className="text-[11px] text-stone-500 font-medium -mt-0.5">{getTabTitle()}</p>
+          <p
+            className="text-xs font-medium -mt-0.5"
+            style={{ color: 'var(--md-on-surface-variant)' }}
+          >
+            {getTabTitle()}
+          </p>
         </div>
       </div>
 
-      {/* Right Controls: Weather Refresh */}
-      <div className="flex items-center space-x-2">
-        {/* Live GPS Weather Refresh Button */}
+      {/* Right Controls */}
+      <div className="flex items-center gap-2">
         <button
           id="btn-refresh-weather"
           onClick={requestGPSWeather}
           title="Refresh GPS Weather"
-          className="p-2 rounded-xl bg-white border border-[#e7e2d9] text-stone-600 hover:text-[#8c5836] hover:bg-stone-50 shadow-2xs transition-colors"
+          className="md-ripple w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+          style={{
+            backgroundColor: 'var(--md-surface-container-high)',
+            color: 'var(--md-on-surface-variant)',
+          }}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isWeatherLoading ? 'animate-spin text-[#8c5836]' : ''}`} />
+          <RefreshCw
+            className={`w-4 h-4 ${isWeatherLoading ? 'animate-spin' : ''}`}
+            style={isWeatherLoading ? { color: 'var(--md-primary)' } : undefined}
+          />
         </button>
       </div>
     </header>

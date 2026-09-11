@@ -18,6 +18,7 @@ import {
 import { BodyViewType, BodyViewImage, UserBodyProfile, ImageQualityValidationResult } from '../../types';
 import { ImageProcessingService } from '../../services/ImageProcessingService';
 import { StorageService } from '../../services/StorageService';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface BodyCaptureWizardProps {
   isOpen: boolean;
@@ -186,7 +187,9 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
+  const [shouldRender, isExiting] = useDelayedRender(isOpen);
+
+  if (!shouldRender) return null;
 
   const viewsList: { id: BodyViewType; label: string; desc: string; required: boolean }[] = [
     { id: 'front', label: 'Front View', desc: 'Face camera upright, arms slightly away', required: true },
@@ -199,17 +202,26 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
   const hasFrontView = !!capturedViews.front;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-scrollbar">
-      <div className="bg-[#f9f6f0] border border-[#e7e2d9] rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-scrollbar backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`} style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
+      <div
+        className={`rounded-3xl w-full max-w-xl overflow-hidden md-elevation-5 flex flex-col max-h-[92vh] ${isExiting ? 'animate-md-exit' : 'animate-md-sheet'}`}
+        style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+      >
         {/* Header */}
-        <div className="px-5 py-4 bg-white border-b border-[#e7e2d9] flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-xl bg-[#8c5836] text-white flex items-center justify-center shadow-xs">
+        <div
+          className="px-5 py-4 flex items-center justify-between border-b"
+          style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center md-elevation-1"
+              style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
+            >
               <Camera className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-stone-900">Virtual Try-On Body Capture</h3>
-              <p className="text-[11px] text-stone-500">Create your private, authentic body representation</p>
+              <h3 className="text-sm font-bold" style={{ color: 'var(--md-on-surface)' }}>Virtual Try-On Body Capture</h3>
+              <p className="text-[11px]" style={{ color: 'var(--md-on-surface-variant)' }}>Create your private, authentic body representation</p>
             </div>
           </div>
           <button
@@ -217,14 +229,18 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
               stopCamera();
               onClose();
             }}
-            className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+            className="p-1.5 rounded-full transition-colors"
+            style={{ color: 'var(--md-on-surface-variant)' }}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* View Angle Step Selector */}
-        <div className="px-4 py-2.5 bg-white/70 border-b border-[#e7e2d9] flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar">
+        <div
+          className="px-4 py-2.5 flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar border-b"
+          style={{ backgroundColor: 'var(--md-surface-container-lowest)', borderColor: 'var(--md-outline-variant)' }}
+        >
           {viewsList.map((step) => {
             const isFilled = !!capturedViews[step.id];
             const isCurrent = currentStepView === step.id;
@@ -237,17 +253,23 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
                   setCurrentStepView(step.id);
                   setCurrentValidation(null);
                 }}
-                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1 border ${
-                  isCurrent
-                    ? 'bg-[#8c5836] text-white border-[#8c5836] shadow-xs'
+                className="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1"
+                style={{
+                  backgroundColor: isCurrent
+                    ? 'var(--md-primary)'
                     : isFilled
-                    ? 'bg-[#eef3e8] text-[#4d663b] border-[#c5d8ba]'
-                    : 'bg-stone-50 text-stone-600 border-[#e7e2d9] hover:bg-stone-100'
-                }`}
+                    ? 'var(--md-primary-container)'
+                    : 'var(--md-surface-container)',
+                  color: isCurrent
+                    ? 'var(--md-on-primary)'
+                    : isFilled
+                    ? 'var(--md-on-primary-container)'
+                    : 'var(--md-on-surface-variant)',
+                }}
               >
-                {isFilled && <CheckCircle2 className="w-3 h-3 text-[#4d663b]" />}
+                {isFilled && <CheckCircle2 className="w-3 h-3" />}
                 <span className="truncate">{step.label}</span>
-                {step.required && !isFilled && <span className="text-[10px] text-amber-600">*</span>}
+                {step.required && !isFilled && <span className="text-[10px]" style={{ color: 'var(--md-error)' }}>*</span>}
               </button>
             );
           })}
@@ -256,22 +278,31 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
         {/* Main Stage Viewport */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
           {/* Active View Title & Guidance */}
-          <div className="bg-white rounded-2xl p-3.5 border border-[#e7e2d9] shadow-xs">
+          <div
+            className="rounded-2xl p-3.5 md-elevation-1"
+            style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}
+          >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-extrabold text-stone-900 uppercase tracking-wider">
+              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--md-on-surface)' }}>
                 {viewsList.find((v) => v.id === currentStepView)?.label}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#f5ede3] text-[#8c5836] border border-[#ddcfbe]">
+              <span
+                className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                style={{ backgroundColor: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)' }}
+              >
                 {viewsList.find((v) => v.id === currentStepView)?.required ? 'Required Angle' : 'Optional Multi-Angle'}
               </span>
             </div>
-            <p className="text-xs text-stone-600 leading-relaxed">
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--md-on-surface-variant)' }}>
               {viewsList.find((v) => v.id === currentStepView)?.desc}
             </p>
           </div>
 
           {/* Camera Stage or Photo Preview */}
-          <div className="relative aspect-[3/4] max-h-[380px] w-full mx-auto bg-stone-900 rounded-2xl overflow-hidden border border-stone-300 shadow-inner flex items-center justify-center">
+          <div
+            className="relative aspect-[3/4] max-h-[380px] w-full mx-auto rounded-2xl overflow-hidden flex items-center justify-center"
+            style={{ backgroundColor: 'var(--md-surface-container)' }}
+          >
             {isCameraActive ? (
               <div className="relative w-full h-full">
                 <video
@@ -285,33 +316,44 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
                 {/* On-Screen Camera Silhouette & Pose Guide Overlay */}
                 <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-between p-4">
                   {/* Top Guide Notice */}
-                  <div className="bg-black/65 backdrop-blur-md px-3 py-1.5 rounded-full text-white text-[11px] font-semibold flex items-center space-x-1.5 border border-white/20">
-                    <Sun className="w-3.5 h-3.5 text-amber-300" />
+                  <div
+                    className="px-3 py-1.5 rounded-full text-[11px] font-semibold flex items-center gap-1.5 md-elevation-2"
+                    style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
+                  >
+                    <Sun className="w-3.5 h-3.5" style={{ color: 'var(--md-tertiary)' }} />
                     <span>Face light source • Plain background recommended</span>
                   </div>
 
                   {/* Body Silhouette Outline Overlay */}
-                  <div className="w-48 h-72 border-2 border-dashed border-amber-300/70 rounded-full flex flex-col items-center justify-center relative shadow-[0_0_20px_rgba(251,191,36,0.2)]">
-                    <div className="w-16 h-16 rounded-full border border-amber-300/60 mb-2"></div>
-                    <div className="w-28 h-36 border border-amber-300/60 rounded-3xl"></div>
-                    <span className="text-[10px] text-amber-200 font-bold mt-2 bg-black/60 px-2 py-0.5 rounded-md">
+                  <div
+                    className="w-48 h-72 border-2 border-dashed rounded-full flex flex-col items-center justify-center relative"
+                    style={{ borderColor: 'var(--md-primary)', opacity: 0.6 }}
+                  >
+                    <div className="w-16 h-16 rounded-full border" style={{ borderColor: 'var(--md-primary)', opacity: 0.5 }}></div>
+                    <div className="w-28 h-36 border rounded-3xl" style={{ borderColor: 'var(--md-primary)', opacity: 0.5 }}></div>
+                    <span
+                      className="text-[10px] font-bold mt-2 px-2 py-0.5 rounded-md"
+                      style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
+                    >
                       Align Full Body Here
                     </span>
                   </div>
 
                   {/* Bottom Snap Button */}
-                  <div className="pointer-events-auto flex items-center space-x-4">
+                  <div className="pointer-events-auto flex items-center gap-4">
                     <button
                       onClick={stopCamera}
-                      className="px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white text-stone-800 text-xs font-bold shadow-md"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold md-elevation-2"
+                      style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
                     >
                       Cancel
                     </button>
                     <button
                       onClick={capturePhotoFromVideo}
-                      className="w-14 h-14 rounded-full bg-white text-stone-900 border-4 border-amber-400 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
+                      className="w-14 h-14 rounded-full flex items-center justify-center md-elevation-3 active:scale-95 transition-transform"
+                      style={{ backgroundColor: 'var(--md-surface-container-lowest)', color: 'var(--md-on-surface)' }}
                     >
-                      <div className="w-10 h-10 rounded-full bg-red-600"></div>
+                      <div className="w-10 h-10 rounded-full" style={{ backgroundColor: 'var(--md-primary)' }}></div>
                     </button>
                   </div>
                 </div>
@@ -328,13 +370,19 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
                 {/* Validation Badge */}
                 <div className="absolute top-3 left-3">
                   {currentViewData.validation.isValid ? (
-                    <span className="px-2.5 py-1 rounded-full bg-[#eef3e8] text-[#4d663b] text-[11px] font-bold border border-[#c5d8ba] shadow-xs flex items-center space-x-1">
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 md-elevation-1"
+                      style={{ backgroundColor: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)' }}
+                    >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Quality Validated</span>
                     </span>
                   ) : (
-                    <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200 shadow-xs flex items-center space-x-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 md-elevation-1"
+                      style={{ backgroundColor: 'var(--md-error-container)', color: 'var(--md-on-error-container)' }}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
                       <span>Review Quality</span>
                     </span>
                   )}
@@ -344,9 +392,10 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
                 <div className="absolute bottom-3 inset-x-3 flex items-center justify-between">
                   <button
                     onClick={handleRetakeCurrent}
-                    className="px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md text-stone-800 text-xs font-bold shadow-md hover:bg-white transition-all flex items-center space-x-1"
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold md-elevation-2 flex items-center gap-1"
+                    style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-stone-600" />
+                    <RotateCcw className="w-3.5 h-3.5" />
                     <span>Retake Photo</span>
                   </button>
 
@@ -359,7 +408,8 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
                       });
                       setCurrentValidation(null);
                     }}
-                    className="p-2 rounded-xl bg-white/90 backdrop-blur-md text-rose-600 hover:bg-rose-50 text-xs font-bold shadow-md transition-all"
+                    className="p-2 rounded-xl md-elevation-2 transition-all"
+                    style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-error)' }}
                     title="Delete this view"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -369,18 +419,22 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
             ) : (
               /* Empty View Capture Trigger */
               <div className="text-center p-6 space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-white/10 text-stone-200 flex items-center justify-center border border-white/20">
+                <div
+                  className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--md-surface-container-highest)', color: 'var(--md-on-surface)' }}
+                >
                   <Camera className="w-8 h-8" />
                 </div>
-                <div className="text-stone-300 text-xs space-y-1">
-                  <p className="font-bold text-white text-sm">Capture {viewsList.find((v) => v.id === currentStepView)?.label}</p>
-                  <p className="text-[11px] text-stone-400">Use on-screen camera or upload from files</p>
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-sm" style={{ color: 'var(--md-on-surface)' }}>Capture {viewsList.find((v) => v.id === currentStepView)?.label}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--md-on-surface-variant)' }}>Use on-screen camera or upload from files</p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
                   <button
                     onClick={startCamera}
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#8c5836] hover:bg-[#784a2c] text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-md transition-all"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 md-elevation-1 transition-all"
+                    style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
                   >
                     <Camera className="w-3.5 h-3.5" />
                     <span>Open Camera</span>
@@ -388,7 +442,8 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
 
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold flex items-center justify-center space-x-1.5 border border-white/30 shadow-md transition-all"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 md-elevation-1 transition-all"
+                    style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload Image</span>
@@ -409,32 +464,32 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
           {/* Quality Analysis Feedback Banner */}
           {currentValidation && (
             <div
-              className={`p-3.5 rounded-2xl border transition-all ${
-                currentValidation.isValid
-                  ? 'bg-[#eef3e8] border-[#c5d8ba] text-[#4d663b]'
-                  : 'bg-amber-50 border-amber-200 text-amber-900'
-              }`}
+              className="p-3.5 rounded-2xl transition-all"
+              style={{
+                backgroundColor: currentValidation.isValid ? 'var(--md-primary-container)' : 'var(--md-error-container)',
+                color: currentValidation.isValid ? 'var(--md-on-primary-container)' : 'var(--md-on-error-container)',
+              }}
             >
-              <div className="flex items-start space-x-2">
+              <div className="flex items-start gap-2">
                 {currentValidation.isValid ? (
-                  <CheckCircle2 className="w-4 h-4 text-[#4d663b] flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 ) : (
-                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 )}
                 <div className="flex-1 text-xs">
                   <p className="font-bold">{currentValidation.feedbackMessage}</p>
-                  <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-black/10 text-[10px]">
+                  <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t text-[10px]" style={{ borderColor: 'currentColor', opacity: 0.2 }}>
                     <div>
-                      <span className="text-stone-500 block">Lighting</span>
-                      <span className="font-bold text-stone-800">{currentValidation.brightnessScore}% (Good)</span>
+                      <span className="block" style={{ opacity: 0.7 }}>Lighting</span>
+                      <span className="font-bold">{currentValidation.brightnessScore}% (Good)</span>
                     </div>
                     <div>
-                      <span className="text-stone-500 block">Sharpness</span>
-                      <span className="font-bold text-stone-800">{currentValidation.blurScore}%</span>
+                      <span className="block" style={{ opacity: 0.7 }}>Sharpness</span>
+                      <span className="font-bold">{currentValidation.blurScore}%</span>
                     </div>
                     <div>
-                      <span className="text-stone-500 block">Framing</span>
-                      <span className="font-bold text-stone-800">{currentValidation.aspectRatio >= 1.0 ? 'Full-Body' : 'Landscape'}</span>
+                      <span className="block" style={{ opacity: 0.7 }}>Framing</span>
+                      <span className="font-bold">{currentValidation.aspectRatio >= 1.0 ? 'Full-Body' : 'Landscape'}</span>
                     </div>
                   </div>
                 </div>
@@ -443,37 +498,44 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
           )}
 
           {/* Privacy & Authentic Body Guarantee */}
-          <div className="p-3.5 rounded-2xl bg-white border border-[#e7e2d9] space-y-1.5">
-            <div className="flex items-center space-x-1.5 text-xs font-bold text-stone-800">
-              <ShieldCheck className="w-4 h-4 text-[#4d663b]" />
+          <div className="p-3.5 rounded-2xl md-elevation-1 space-y-1.5" style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}>
+            <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>
+              <ShieldCheck className="w-4 h-4" style={{ color: 'var(--md-tertiary)' }} />
               <span>Strict Privacy & Authentic Body Guarantee</span>
             </div>
-            <p className="text-[11px] text-stone-600 leading-relaxed">
+            <p className="text-[11px] leading-relaxed" style={{ color: 'var(--md-on-surface-variant)' }}>
               Your photographs are stored securely on your personal account. They are strictly used to visualize clothing on your natural physique and are never used to train public AI models. You can permanently delete your body profile at any time.
             </p>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-white border-t border-[#e7e2d9] flex items-center justify-between gap-3">
-          <div className="text-[11px] text-stone-500">
+        <div
+          className="p-4 flex items-center justify-between gap-3 border-t"
+          style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+        >
+          <div className="text-[11px]">
             {hasFrontView ? (
-              <span className="text-[#4d663b] font-bold flex items-center space-x-1">
+              <span className="font-bold flex items-center gap-1" style={{ color: 'var(--md-tertiary)' }}>
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Ready for Virtual Try-On</span>
               </span>
             ) : (
-              <span className="text-amber-700 font-medium">Front view required to proceed</span>
+              <span className="font-medium" style={{ color: 'var(--md-error)' }}>Front view required to proceed</span>
             )}
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 stopCamera();
                 onClose();
               }}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 border border-[#e7e2d9] transition-all"
+              className="px-3.5 py-2 rounded-xl text-xs font-bold md-elevation-1 transition-all"
+              style={{
+                backgroundColor: 'var(--md-surface-container-lowest)',
+                color: 'var(--md-on-surface)',
+              }}
             >
               Cancel
             </button>
@@ -481,11 +543,12 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
             <button
               disabled={!hasFrontView || isAnalyzing}
               onClick={handleSaveProfile}
-              className={`px-4 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center space-x-1.5 shadow-md ${
-                hasFrontView && !isAnalyzing
-                  ? 'bg-[#8c5836] hover:bg-[#784a2c]'
-                  : 'bg-stone-300 cursor-not-allowed text-stone-500'
-              }`}
+              className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+              style={{
+                backgroundColor: hasFrontView && !isAnalyzing ? 'var(--md-primary)' : 'var(--md-surface-container-highest)',
+                color: hasFrontView && !isAnalyzing ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
+                opacity: hasFrontView && !isAnalyzing ? 1 : 0.6,
+              }}
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Save & Open Dressing Room</span>

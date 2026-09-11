@@ -149,8 +149,8 @@ export const OutfitRecommendationCard: React.FC<OutfitRecommendationCardProps> =
           </span>
           <ul className="space-y-0.5">
             {recommendation.stylingTips.map((tip, idx) => (
-              <li key={idx} className="text-[11px] text-stone-600 flex items-start space-x-1">
-                <Sparkles className="w-2.5 h-2.5 text-[#8c5836] mt-0.5 flex-shrink-0" />
+              <li key={idx} className="text-[11px] flex items-start gap-1" style={{ color: 'var(--md-on-surface-variant)' }}>
+                <Sparkles className="w-2.5 h-2.5 mt-0.5 flex-shrink-0" style={{ color: 'var(--md-primary)' }} />
                 <span>{tip}</span>
               </li>
             ))}
@@ -159,26 +159,29 @@ export const OutfitRecommendationCard: React.FC<OutfitRecommendationCardProps> =
       )}
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#eee9df]">
+      <div className="grid grid-cols-3 gap-2 pt-2 border-t" style={{ borderColor: 'var(--md-outline-variant)' }}>
         <button
           onClick={() => onTryOn(recommendation.selectedItemIds)}
-          className="py-2 bg-[#8c5836] hover:bg-[#784a2c] text-white rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1 shadow-xs transition-all"
+          className="py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
+          style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
         >
           <Shirt className="w-3 h-3" />
           <span>Try On</span>
         </button>
         <button
           onClick={() => onSave(recommendation)}
-          className="py-2 bg-stone-100 hover:bg-stone-200 border border-[#e7e2d9] text-stone-700 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1 transition-colors"
+          className="py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+          style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
         >
-          <Heart className="w-3 h-3 text-rose-500" />
+          <Heart className="w-3 h-3" style={{ color: 'var(--md-tertiary)' }} />
           <span>Save</span>
         </button>
         <button
           onClick={() => onFitAnalysis(recommendation.selectedItemIds)}
-          className="py-2 bg-stone-100 hover:bg-stone-200 border border-[#e7e2d9] text-stone-700 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1 transition-colors"
+          className="py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+          style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
         >
-          <ShieldCheck className="w-3 h-3 text-[#5e7d48]" />
+          <ShieldCheck className="w-3 h-3" style={{ color: 'var(--md-tertiary)' }} />
           <span>Fit</span>
         </button>
       </div>

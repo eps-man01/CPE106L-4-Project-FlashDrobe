@@ -1,17 +1,23 @@
 @import "tailwindcss";
+@import "./design-tokens.css";
+
+@theme {
+  --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-primary);
+}
 
 @layer base {
   html,
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-primary);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
-    background-color: #f9f6f0;
+    background-color: var(--md-surface);
+    color: var(--md-on-surface);
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
 
-  /* Completely remove scrollbars on right side and everywhere across all elements */
   * {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
@@ -25,7 +31,9 @@
   }
 }
 
-/* Custom utility for hidden scrollbars */
+/* ═══════════════════════════════════════════════════════════════════
+   Utility: Hidden Scrollbar
+   ═══════════════════════════════════════════════════════════════════ */
 .no-scrollbar::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
@@ -36,114 +44,204 @@
   scrollbar-width: none !important;
 }
 
-/* Android Ripple & Active Tap Feedback */
-.android-tap-active:active {
-  transform: scale(0.97);
-  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* ═══════════════════════════════════════════════════════════════════
+   Material Expressive — Keyframes
+   ═══════════════════════════════════════════════════════════════════ */
 
-.android-tap-pill:active {
-  transform: scale(0.95);
-  filter: brightness(0.92);
-}
-
-/* Sleek Interface Surface Elevations & Earthy Shadows */
-.sleek-card {
-  background-color: #ffffff;
-  border: 1px solid #e7e2d9;
-  box-shadow: 0 1px 3px 0 rgba(41, 37, 36, 0.04), 0 1px 2px -1px rgba(41, 37, 36, 0.04);
-}
-
-.sleek-card-elevated {
-  background-color: #ffffff;
-  border: 1px solid #e7e2d9;
-  box-shadow: 0 10px 25px -5px rgba(41, 37, 36, 0.08), 0 8px 10px -6px rgba(41, 37, 36, 0.04);
-}
-
-.sleek-glass {
-  background-color: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-/* Material Expressive Animations */
-@keyframes material-emphasized-decelerate {
+@keyframes md-emphasized-decelerate {
   0% { opacity: 0; transform: scale(0.85) translateY(8px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes material-emphasized-accelerate {
+@keyframes md-emphasized-accelerate {
   0% { opacity: 1; transform: scale(1) translateY(0); }
   100% { opacity: 0; transform: scale(0.85) translateY(-8px); }
 }
 
-@keyframes material-ripple-expand {
-  0% { transform: scale(0); opacity: 0.35; }
-  100% { transform: scale(4); opacity: 0; }
-}
-
-@keyframes material-spring-enter {
+@keyframes md-spring-enter {
   0% { opacity: 0; transform: scale(0.8) translateY(16px); }
-  60% { transform: scale(1.02) translateY(-2px); }
+  55% { transform: scale(1.03) translateY(-2px); }
+  75% { transform: scale(0.99) translateY(1px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes material-color-shift {
-  0%, 100% { background-color: #8c5836; }
-  50% { background-color: #b47043; }
+@keyframes md-ripple-expand {
+  0% { transform: scale(0); opacity: 0.3; }
+  100% { transform: scale(4); opacity: 0; }
 }
 
-.animate-material-enter {
-  animation: material-spring-enter 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+@keyframes md-color-shift {
+  0%, 100% { background-color: var(--md-primary); }
+  50% { background-color: color-mix(in srgb, var(--md-primary) 70%, var(--md-tertiary)); }
 }
 
-.animate-material-decelerate {
-  animation: material-emphasized-decelerate 0.3s cubic-bezier(0, 0, 0.2, 1) both;
+@keyframes md-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-.animate-material-accelerate {
-  animation: material-emphasized-accelerate 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+@keyframes md-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
-/* Material ripple effect on tap */
-.material-ripple {
+@keyframes md-pulse-tonal {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes md-bounce-in {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.15); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes md-sheet-enter {
+  0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+  60% { opacity: 1; transform: scale(1.02) translateY(-2px); }
+  80% { transform: scale(0.99) translateY(1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes md-sheet-exit {
+  0% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(0.95) translateY(8px); }
+}
+
+@keyframes md-fade-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Material Expressive — Utility Classes
+   ═══════════════════════════════════════════════════════════════════ */
+
+.animate-md-enter {
+  animation: md-spring-enter 0.5s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+.animate-md-decelerate {
+  animation: md-emphasized-decelerate 0.3s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+.animate-md-accelerate {
+  animation: md-emphasized-accelerate 0.2s cubic-bezier(0.3, 0, 0.8, 0.15) both;
+}
+
+.animate-md-bounce {
+  animation: md-bounce-in 0.4s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+.animate-md-sheet {
+  animation: md-sheet-enter 0.35s cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+.animate-md-exit {
+  animation: md-sheet-exit 0.2s cubic-bezier(0.3, 0, 0.8, 0.15) both;
+}
+
+.animate-md-fade-out {
+  animation: md-fade-out 0.2s ease-out both;
+}
+
+.animate-md-float {
+  animation: md-float 3s ease-in-out infinite;
+}
+
+/* Material Ripple Effect */
+.md-ripple {
   position: relative;
   overflow: hidden;
 }
 
-.material-ripple::after {
+.md-ripple::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle, rgba(140, 88, 54, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--md-primary) 0%, transparent 70%);
   transform: scale(0);
   opacity: 0;
   pointer-events: none;
+  mix-blend-mode: soft-light;
 }
 
-.material-ripple:active::after {
-  animation: material-ripple-expand 0.4s cubic-bezier(0, 0, 0.2, 1) both;
+.md-ripple:active::after {
+  animation: md-ripple-expand 0.45s cubic-bezier(0.05, 0.7, 0.1, 1) both;
 }
 
-/* Material Expressive surface elevation transitions */
-.material-elevation {
-  transition: box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+/* Expressive Elevation */
+.md-elevation {
+  transition: box-shadow 0.25s var(--motion-easing-emphasized), transform 0.25s var(--motion-easing-emphasized);
 }
 
-.material-elevation:hover {
-  box-shadow: 0 4px 12px rgba(41, 37, 36, 0.12), 0 2px 4px rgba(41, 37, 36, 0.08);
+.md-elevation-1 {
+  box-shadow: var(--elevation-1);
+}
+
+.md-elevation-2 {
+  box-shadow: var(--elevation-2);
+}
+
+.md-elevation-3 {
+  box-shadow: var(--elevation-3);
+}
+
+.md-elevation:hover {
+  box-shadow: var(--elevation-2);
   transform: translateY(-1px);
 }
 
-.material-elevation:active {
-  box-shadow: 0 1px 3px rgba(41, 37, 36, 0.08);
+.md-elevation:active {
+  box-shadow: var(--elevation-1);
   transform: translateY(0);
 }
 
-/* Stagger animation helper */
+/* Tonal Surface */
+.md-tonal {
+  background-color: var(--md-surface-container);
+}
+
+.md-tonal-high {
+  background-color: var(--md-surface-container-high);
+}
+
+.md-tonal-highest {
+  background-color: var(--md-surface-container-highest);
+}
+
+.md-tonal-primary {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+
+.md-tonal-secondary {
+  background-color: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
+.md-tonal-tertiary {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+}
+
+/* Shimmer Loading */
+.md-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--md-surface-container) 25%,
+    var(--md-surface-container-high) 50%,
+    var(--md-surface-container) 75%
+  );
+  background-size: 200% 100%;
+  animation: md-shimmer 1.8s ease-in-out infinite;
+}
+
+/* Stagger delays */
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.1s; }
 .stagger-3 { animation-delay: 0.15s; }
 .stagger-4 { animation-delay: 0.2s; }
-
-
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useWardrobe } from '../../context/WardrobeContext';
 import { OutfitCategory } from '../../types';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;
@@ -55,7 +56,9 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
   const [newCatDesc, setNewCatDesc] = useState('');
   const [newCatOccasion, setNewCatOccasion] = useState('');
 
-  if (!isOpen) return null;
+  const [shouldRender, isExiting] = useDelayedRender(isOpen);
+
+  if (!shouldRender) return null;
 
   const renderIcon = (iconName: string) => {
     switch (iconName) {
@@ -107,11 +110,12 @@ export const ManageCategoriesModal: React.FC<ManageCategoriesModalProps> = ({
   return (
     <div
       id="manage-categories-modal-overlay"
-      className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`}
+      style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}
     >
       <div
         id="manage-categories-sheet"
-        className="w-full max-w-lg bg-white border-t sm:border border-[#e7e2d9] sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200 text-stone-900"
+        className={`w-full max-w-lg bg-white border-t sm:border border-[#e7e2d9] sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-stone-900 ${isExiting ? 'animate-md-exit' : 'animate-md-sheet'}`}
       >
         {/* Header */}
         <div className="px-5 py-4 border-b border-[#e7e2d9] flex items-center justify-between bg-stone-50/90">

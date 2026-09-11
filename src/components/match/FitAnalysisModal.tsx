@@ -1,8 +1,10 @@
 import React from 'react';
 import { X, ShieldCheck, Scissors, RefreshCw } from 'lucide-react';
 import { VirtualTryOnResult } from '../../types';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface FitAnalysisModalProps {
+  isOpen: boolean;
   result: VirtualTryOnResult;
   onClose: () => void;
   onReEvaluate: () => void;
@@ -10,14 +12,19 @@ interface FitAnalysisModalProps {
 }
 
 export const FitAnalysisModal: React.FC<FitAnalysisModalProps> = ({
+  isOpen,
   result,
   onClose,
   onReEvaluate,
   isReEvaluating,
 }) => {
+  const [shouldRender, isExiting] = useDelayedRender(isOpen);
+
+  if (!shouldRender) return null;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[85vh] overflow-y-auto shadow-2xl animate-in slide-in-from-bottom duration-300">
+    <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`} style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
+      <div className={`bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[85vh] overflow-y-auto shadow-2xl ${isExiting ? 'animate-md-exit' : 'animate-md-sheet'}`}>
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-[#eee9df] px-4 py-3 flex items-center justify-between z-10">
           <div className="flex items-center space-x-2">

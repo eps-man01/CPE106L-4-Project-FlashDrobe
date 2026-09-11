@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useWardrobe } from '../../context/WardrobeContext';
 import { ClothingItem } from '../../types';
+import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface ClothingDetailModalProps {
   item: ClothingItem | null;
@@ -37,7 +38,9 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
   const [notes, setNotes] = useState(item?.notes || '');
   const [newTag, setNewTag] = useState('');
 
-  if (!item) return null;
+  const [shouldRender, isExiting] = useDelayedRender(!!item);
+
+  if (!shouldRender) return null;
 
   const handleSaveEdit = () => {
     updateClothingItem(item.id, {
@@ -79,14 +82,19 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
   return (
     <div
       id="clothing-detail-modal-overlay"
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 text-stone-900"
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`}
+      style={{ backgroundColor: 'rgba(0,0,0,0.35)', color: 'var(--md-on-surface)' }}
     >
       <div
         id="clothing-detail-card"
-        className="w-full max-w-lg bg-white border-t sm:border border-[#e7e2d9] sm:rounded-3xl rounded-t-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200"
+        className={`w-full max-w-lg border-t sm:border sm:rounded-3xl rounded-t-3xl max-h-[92vh] flex flex-col overflow-hidden md-elevation-5 ${isExiting ? 'animate-md-exit' : 'animate-md-sheet'}`}
+        style={{ backgroundColor: 'var(--md-surface-container-lowest)', borderColor: 'var(--md-outline-variant)' }}
       >
         {/* Top Image Hero Banner */}
-        <div className="relative w-full h-64 bg-stone-100 flex-shrink-0">
+        <div
+          className="relative w-full h-64 flex-shrink-0"
+          style={{ backgroundColor: 'var(--md-surface-container)' }}
+        >
           <img
             src={item.imageUrl}
             alt={item.name}
@@ -96,23 +104,28 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
 
           {/* Top Actions */}
           <div className="absolute top-3 inset-x-3 flex items-center justify-between z-10">
-            <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-bold text-[#8c5836] border border-[#e7e2d9] shadow-xs">
+            <span
+              className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-bold border"
+              style={{ color: 'var(--md-primary)', borderColor: 'var(--md-outline-variant)' }}
+            >
               {item.classification}
             </span>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => toggleFavoriteItem(item.id)}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-md text-stone-700 hover:text-rose-500 transition-colors border border-[#e7e2d9] shadow-xs"
+                className="p-2 rounded-full bg-white/90 backdrop-blur-md hover:text-rose-500 transition-colors border"
+                style={{ color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               >
                 <Heart
                   className={`w-4 h-4 ${
-                    item.isFavorite ? 'fill-rose-500 text-rose-500' : 'text-stone-700'
+                    item.isFavorite ? 'fill-rose-500 text-rose-500' : ''
                   }`}
                 />
               </button>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-md text-stone-700 hover:text-stone-900 border border-[#e7e2d9] shadow-xs"
+                className="p-2 rounded-full bg-white/90 backdrop-blur-md border"
+                style={{ color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -138,106 +151,129 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
               openVirtualTryOn([item.id], item.name);
               onClose();
             }}
-            className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-[#8c5836] to-[#a16b47] hover:from-[#784a2c] hover:to-[#8c5836] text-white text-xs font-bold shadow-md shadow-[#8c5836]/20 flex items-center justify-center space-x-2 transition-all transform active:scale-98"
+            className="w-full py-2.5 px-4 rounded-2xl text-xs font-bold flex items-center justify-center space-x-2 transition-all transform active:scale-98"
+            style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
           >
-            <Sparkles className="w-4 h-4 text-white stroke-[2.5]" />
+            <Sparkles className="w-4 h-4 stroke-[2.5]" />
             <span>Try On in Virtual Fitting Studio</span>
           </button>
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="p-2.5 rounded-2xl bg-stone-50 border border-[#e7e2d9] text-center">
-              <div className="flex items-center justify-center space-x-1 text-stone-500 mb-0.5">
+            <div
+              className="p-2.5 rounded-2xl border text-center"
+              style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+            >
+              <div className="flex items-center justify-center space-x-1 mb-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
                 <Thermometer className="w-3.5 h-3.5 text-amber-600" />
                 <span className="text-[10px] uppercase font-bold">Warmth</span>
               </div>
-              <p className="text-xs font-extrabold text-stone-900">{item.warmthLevel} / 5</p>
+              <p className="text-xs font-extrabold" style={{ color: 'var(--md-on-surface)' }}>{item.warmthLevel} / 5</p>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-stone-50 border border-[#e7e2d9] text-center">
-              <div className="flex items-center justify-center space-x-1 text-stone-500 mb-0.5">
-                <CloudRain className="w-3.5 h-3.5 text-[#8c5836]" />
+            <div
+              className="p-2.5 rounded-2xl border text-center"
+              style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+            >
+              <div className="flex items-center justify-center space-x-1 mb-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                <CloudRain className="w-3.5 h-3.5" style={{ color: 'var(--md-primary)' }} />
                 <span className="text-[10px] uppercase font-bold">Weather</span>
               </div>
-              <p className="text-xs font-extrabold text-stone-900 truncate">
+              <p className="text-xs font-extrabold truncate" style={{ color: 'var(--md-on-surface)' }}>
                 {item.seasonSuitability}
               </p>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-stone-50 border border-[#e7e2d9] text-center">
-              <div className="flex items-center justify-center space-x-1 text-stone-500 mb-0.5">
+            <div
+              className="p-2.5 rounded-2xl border text-center"
+              style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+            >
+              <div className="flex items-center justify-center space-x-1 mb-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
                 <Calendar className="w-3.5 h-3.5 text-[#6b7c59]" />
                 <span className="text-[10px] uppercase font-bold">Worn</span>
               </div>
-              <p className="text-xs font-extrabold text-stone-900">{item.wearCount} times</p>
+              <p className="text-xs font-extrabold" style={{ color: 'var(--md-on-surface)' }}>{item.wearCount} times</p>
             </div>
           </div>
 
           {/* Color & Tone */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-stone-50 border border-[#e7e2d9]">
+          <div
+            className="flex items-center justify-between p-3 rounded-2xl border"
+            style={{ backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+          >
             <div className="flex items-center space-x-2.5">
               <div
                 className="w-6 h-6 rounded-full border-2 border-white shadow"
                 style={{ backgroundColor: item.color }}
               />
               <div>
-                <p className="text-xs font-bold text-stone-900">Color Palette</p>
-                <p className="text-[11px] text-stone-500 font-medium">{item.colorName}</p>
+                <p className="text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>Color Palette</p>
+                <p className="text-[11px] font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{item.colorName}</p>
               </div>
             </div>
             <button
               onClick={() => markItemWorn(item.id)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#f0e9df] hover:bg-[#e8dfd2] text-[#784a2c] border border-[#ddcfbe] text-xs font-bold transition-all shadow-xs"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all"
+              style={{ backgroundColor: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)', borderColor: 'var(--md-outline-variant)' }}
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#784a2c]" />
+              <CheckCircle2 className="w-3.5 h-3.5" style={{ color: 'var(--md-on-secondary-container)' }} />
               <span>Mark Worn Today</span>
             </button>
           </div>
 
           {/* Edit Mode vs View Mode */}
           {isEditing ? (
-            <div className="space-y-2.5 p-3.5 rounded-2xl bg-stone-50 border border-[#8c5836]/40">
-              <h4 className="text-xs font-bold text-[#8c5836] uppercase">Edit Item Details</h4>
+            <div
+              className="space-y-2.5 p-3.5 rounded-2xl border border-[#8c5836]/40"
+              style={{ backgroundColor: 'var(--md-surface-container)' }}
+            >
+              <h4 className="text-xs font-bold uppercase" style={{ color: 'var(--md-primary)' }}>Edit Item Details</h4>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Item name"
-                className="w-full bg-white border border-[#e7e2d9] rounded-xl px-3 py-1.5 text-xs text-stone-900"
+                className="w-full border rounded-xl px-3 py-1.5 text-xs"
+                style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               />
               <input
                 type="text"
                 value={subType}
                 onChange={(e) => setSubType(e.target.value)}
                 placeholder="Sub-Type (e.g. Graphic Tee)"
-                className="w-full bg-white border border-[#e7e2d9] rounded-xl px-3 py-1.5 text-xs text-stone-900"
+                className="w-full border rounded-xl px-3 py-1.5 text-xs"
+                style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               />
               <input
                 type="text"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
                 placeholder="Brand"
-                className="w-full bg-white border border-[#e7e2d9] rounded-xl px-3 py-1.5 text-xs text-stone-900"
+                className="w-full border rounded-xl px-3 py-1.5 text-xs"
+                style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               />
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Notes..."
                 rows={2}
-                className="w-full bg-white border border-[#e7e2d9] rounded-xl px-3 py-1.5 text-xs text-stone-900 resize-none"
+                className="w-full border rounded-xl px-3 py-1.5 text-xs resize-none"
+                style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               />
               <div className="flex space-x-2 pt-1">
                 <button
                   type="button"
                   onClick={handleSaveEdit}
-                  className="flex-1 py-1.5 bg-[#8c5836] hover:bg-[#784a2c] text-white rounded-xl text-xs font-bold shadow-xs"
+                  className="flex-1 py-1.5 rounded-xl text-xs font-bold"
+                  style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
                 >
                   Save Changes
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1.5 bg-stone-200 text-stone-700 rounded-xl text-xs font-bold"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold"
+                  style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)' }}
                 >
                   Cancel
                 </button>
@@ -246,16 +282,20 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
           ) : (
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-stone-700">Notes & Material</span>
+                <span className="text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>Notes & Material</span>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="text-xs text-[#8c5836] hover:text-[#784a2c] font-bold flex items-center space-x-1"
+                  className="text-xs font-bold flex items-center space-x-1"
+                  style={{ color: 'var(--md-primary)' }}
                 >
                   <Edit2 className="w-3 h-3" />
                   <span>Edit</span>
                 </button>
               </div>
-              <p className="text-xs text-stone-600 bg-stone-50 p-3 rounded-2xl border border-[#e7e2d9] italic">
+              <p
+                className="text-xs p-3 rounded-2xl border italic"
+                style={{ color: 'var(--md-on-surface-variant)', backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
+              >
                 {item.notes || 'No custom notes added for this item.'}
               </p>
             </div>
@@ -263,14 +303,15 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
 
           {/* Tags Manager */}
           <div>
-            <span className="block text-xs font-bold text-stone-700 mb-1.5">
+            <span className="block text-xs font-bold mb-1.5" style={{ color: 'var(--md-on-surface)' }}>
               Assigned Category Tags
             </span>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {item.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-[#f5ede3] border border-[#e5dec9] text-[#784a2c] text-xs font-semibold shadow-xs"
+                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full border text-xs font-semibold"
+                  style={{ backgroundColor: 'var(--md-primary-container)', borderColor: 'var(--md-outline-variant)', color: 'var(--md-on-secondary-container)' }}
                 >
                   <span>{tag}</span>
                   <button
@@ -289,11 +330,13 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 placeholder="Add tag (e.g. #exam-day)..."
-                className="flex-1 bg-stone-50 border border-[#e7e2d9] rounded-xl px-3 py-1.5 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#8c5836] focus:bg-white"
+                className="flex-1 border rounded-xl px-3 py-1.5 text-xs placeholder-stone-400 focus:outline-none focus:border-[#8c5836]"
+                style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               />
               <button
                 type="submit"
-                className="px-3.5 py-1.5 bg-[#8c5836] hover:bg-[#784a2c] text-white text-xs rounded-xl font-bold transition-colors shadow-xs"
+                className="px-3.5 py-1.5 text-xs rounded-xl font-bold transition-colors"
+                style={{ backgroundColor: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
               >
                 Add
               </button>
@@ -301,7 +344,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
           </div>
 
           {/* Delete Action */}
-          <div className="pt-2 border-t border-[#e7e2d9] flex justify-end">
+          <div className="pt-2 border-t flex justify-end" style={{ borderColor: 'var(--md-outline-variant)' }}>
             <button
               onClick={handleDelete}
               className="flex items-center space-x-1.5 text-xs text-rose-600 hover:text-rose-700 font-semibold px-3 py-2 rounded-xl hover:bg-rose-50 transition-colors"
