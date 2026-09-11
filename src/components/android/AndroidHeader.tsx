@@ -32,7 +32,7 @@ export const AndroidHeader: React.FC<AndroidHeaderProps> = () => {
       case 'favorites':
         return 'Saved Collections';
       case 'profile':
-        return 'Style & Settings';
+        return 'My Profile';
       default:
         return 'Flashdrobe';
     }
