@@ -17,6 +17,7 @@ import { WeatherOccasionBar } from '../match/WeatherOccasionBar';
 import { OutfitRecommendationCarousel } from '../match/OutfitRecommendationCarousel';
 import { ItemSwapDrawer } from '../match/ItemSwapDrawer';
 import { FitAnalysisModal } from '../match/FitAnalysisModal';
+import { correctImageOrientation } from '../../utils/canvasHelpers';
 
 export const VirtualTryOnView: React.FC = () => {
   const {
@@ -239,15 +240,21 @@ export const VirtualTryOnView: React.FC = () => {
   }, [handleFitAnalysis, tryOnItemIds]);
 
   // Handle photo upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateUserProfile({ uploadedTryOnPhoto: reader.result as string });
+    try {
+      const correctedUrl = await correctImageOrientation(file);
+      updateUserProfile({ uploadedTryOnPhoto: correctedUrl });
       setModelSource('custom');
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateUserProfile({ uploadedTryOnPhoto: reader.result as string });
+        setModelSource('custom');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
