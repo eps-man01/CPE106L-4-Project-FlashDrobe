@@ -10,6 +10,7 @@ import {
   ActiveTab,
   DeviceOrientationMode,
   GeminiOutfitResult,
+  BodyAnalysisResult,
 } from '../types';
 import {
   INITIAL_CATEGORIES,
@@ -68,6 +69,9 @@ interface WardrobeContextType {
   markOutfitWorn: (id: string) => void;
   // User profile
   updateUserProfile: (updates: Partial<UserProfile>) => void;
+  // Body Analysis
+  analyzeBodyPhoto: (photoDataUrl: string) => Promise<BodyAnalysisResult | null>;
+  isAnalyzingBody: boolean;
   // Weather
   refreshWeather: (lat?: number, lon?: number) => Promise<void>;
   // AI Stylist
@@ -174,6 +178,9 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Batch recommendations state
   const [recommendations, setRecommendations] = useState<GeminiOutfitResult[]>([]);
   const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState<boolean>(false);
+
+  // Body analysis state
+  const [isAnalyzingBody, setIsAnalyzingBody] = useState<boolean>(false);
 
   // ─── Firebase Auth Listener ─────────────────────────────
   useEffect(() => {
@@ -307,6 +314,43 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const uploadCustomTryOnPhoto = useCallback((photoBase64: string) => {
     updateUserProfile({ uploadedTryOnPhoto: photoBase64 });
+  }, []);
+
+  // ─── Body Analysis ───────────────────────────────────
+  const analyzeBodyPhoto = useCallback(async (photoDataUrl: string): Promise<BodyAnalysisResult | null> => {
+    setIsAnalyzingBody(true);
+    try {
+      const response = await fetch('/api/analyze-body', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ frontPhotoDataUrl: photoDataUrl }),
+      });
+      if (!response.ok) throw new Error('Body analysis failed');
+      const result = await response.json();
+      if (result.success && result.analysis) {
+        const analysis: BodyAnalysisResult = result.analysis;
+        updateUserProfile({
+          heightCm: analysis.heightCm,
+          weightKg: analysis.weightKg,
+          sex: analysis.sex,
+          bodyType: {
+            code: analysis.bodyTypeCode,
+            label: analysis.bodyTypeLabel,
+            category: analysis.buildCategory,
+            description: analysis.bodyProportions,
+            stylingTip: analysis.stylingRules.join(' '),
+          },
+          bodyAnalysis: analysis,
+        });
+        return analysis;
+      }
+      return null;
+    } catch (err) {
+      console.error('Body analysis failed:', err);
+      return null;
+    } finally {
+      setIsAnalyzingBody(false);
+    }
   }, []);
 
   // ─── Weather ────────────────────────────────────────────
@@ -506,6 +550,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               : undefined,
             bodyTypeDescription: userProfile.bodyType?.description,
             bodyTypeStylingTip: userProfile.bodyType?.stylingTip,
+            heightCm: userProfile.heightCm,
+            weightKg: userProfile.weightKg,
+            bodyProportions: userProfile.bodyAnalysis?.bodyProportions,
+            stylingRules: userProfile.bodyAnalysis?.stylingRules,
           },
           occasionNotes: notes,
         }),
@@ -565,6 +613,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               : undefined,
             bodyTypeDescription: userProfile.bodyType?.description,
             bodyTypeStylingTip: userProfile.bodyType?.stylingTip,
+            heightCm: userProfile.heightCm,
+            weightKg: userProfile.weightKg,
+            bodyProportions: userProfile.bodyAnalysis?.bodyProportions,
+            stylingRules: userProfile.bodyAnalysis?.stylingRules,
           },
           occasionNotes: notes,
           count,
@@ -646,6 +698,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         customTryOnPhoto: userProfile.uploadedTryOnPhoto || null,
         setCustomTryOnPhoto: (photo: string | null) =>
           updateUserProfile({ uploadedTryOnPhoto: photo || undefined }),
+        analyzeBodyPhoto,
+        isAnalyzingBody,
         deviceMode,
         setDeviceMode,
         addClothingItem,

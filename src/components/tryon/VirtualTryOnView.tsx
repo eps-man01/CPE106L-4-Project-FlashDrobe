@@ -38,6 +38,7 @@ export const VirtualTryOnView: React.FC = () => {
     isGeneratingRecommendations,
     generateRecommendations,
     swapItemInRecommendation,
+    analyzeBodyPhoto,
   } = useWardrobe();
   const { isOnline } = useConnectivity();
 
@@ -247,11 +248,19 @@ export const VirtualTryOnView: React.FC = () => {
       const correctedUrl = await correctImageOrientation(file);
       updateUserProfile({ uploadedTryOnPhoto: correctedUrl });
       setModelSource('custom');
+      // Trigger body analysis if no existing analysis
+      if (!userProfile.bodyAnalysis && analyzeBodyPhoto) {
+        analyzeBodyPhoto(correctedUrl);
+      }
     } catch {
       const reader = new FileReader();
       reader.onload = () => {
-        updateUserProfile({ uploadedTryOnPhoto: reader.result as string });
+        const photoUrl = reader.result as string;
+        updateUserProfile({ uploadedTryOnPhoto: photoUrl });
         setModelSource('custom');
+        if (!userProfile.bodyAnalysis && analyzeBodyPhoto) {
+          analyzeBodyPhoto(photoUrl);
+        }
       };
       reader.readAsDataURL(file);
     }

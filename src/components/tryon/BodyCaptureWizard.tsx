@@ -27,6 +27,7 @@ interface BodyCaptureWizardProps {
   userId: string;
   initialProfile: UserBodyProfile | null;
   onProfileSaved: (profile: UserBodyProfile) => void;
+  analyzeBodyPhoto?: (photoDataUrl: string) => Promise<any>;
 }
 
 export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
@@ -35,6 +36,7 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
   userId,
   initialProfile,
   onProfileSaved,
+  analyzeBodyPhoto,
 }) => {
   const [currentStepView, setCurrentStepView] = useState<BodyViewType>('front');
   const [capturedViews, setCapturedViews] = useState<{
@@ -187,6 +189,13 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
       createdAt: initialProfile?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // If front photo changed (first capture or update), trigger AI body analysis
+    const isFrontPhotoChanged = capturedViews.front &&
+      capturedViews.front.imageUrl !== initialProfile?.views?.front?.imageUrl;
+    if (isFrontPhotoChanged && analyzeBodyPhoto) {
+      analyzeBodyPhoto(capturedViews.front!.imageUrl);
+    }
 
     await StorageService.saveBodyProfile(profile);
     onProfileSaved(profile);

@@ -86,6 +86,19 @@ export interface BodyTypeInfo {
   stylingTip: string;
 }
 
+export interface BodyAnalysisResult {
+  heightCm: number;
+  weightKg: number;
+  sex: BiologicalSex;
+  bodyTypeCode: string;
+  bodyTypeLabel: string;
+  bodyProportions: string;
+  buildCategory: string;
+  stylingRules: string[];
+  wardrobePriorities: string[];
+  analyzedAt: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -95,6 +108,9 @@ export interface UserProfile {
   bodyType?: BodyTypeInfo;
   customNotes?: string;
   uploadedTryOnPhoto?: string;
+  heightCm?: number;
+  weightKg?: number;
+  bodyAnalysis?: BodyAnalysisResult;
 }
 
 export type ActiveTab = 'wardrobe' | 'stylist' | 'canvas' | 'tryon' | 'favorites' | 'profile';
