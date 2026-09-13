@@ -1,4 +1,5 @@
 import { BodyViewType, ImageQualityValidationResult } from '../types';
+import { correctDataUrlOrientation } from '../utils/canvasHelpers';
 
 /**
  * ImageProcessingService handles client-side quality validation,
@@ -17,6 +18,10 @@ export class ImageProcessingService {
     dataUrl: string,
     viewType: BodyViewType
   ): Promise<ImageQualityValidationResult> {
+    // Correct EXIF orientation so portrait photos from mobile devices
+    // are analyzed in their intended orientation
+    const correctedUrl = await correctDataUrlOrientation(dataUrl);
+
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -150,7 +155,7 @@ export class ImageProcessingService {
         resolve(this.getFallbackValidation(false, 'Failed to decode image file. Please try another photo.'));
       };
 
-      img.src = dataUrl;
+      img.src = correctedUrl;
     });
   }
 
@@ -161,6 +166,9 @@ export class ImageProcessingService {
     dataUrl: string,
     maxDimension: number = 1080
   ): Promise<string> {
+    // Correct EXIF orientation so resized output matches intended orientation
+    const correctedUrl = await correctDataUrlOrientation(dataUrl);
+
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -170,7 +178,7 @@ export class ImageProcessingService {
         const height = img.naturalHeight || img.height;
 
         if (width <= maxDimension && height <= maxDimension) {
-          resolve(dataUrl);
+          resolve(correctedUrl);
           return;
         }
 
@@ -184,7 +192,7 @@ export class ImageProcessingService {
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(dataUrl);
+          resolve(correctedUrl);
           return;
         }
 
@@ -196,8 +204,8 @@ export class ImageProcessingService {
         resolve(canvas.toDataURL('image/jpeg', 0.9));
       };
 
-      img.onerror = () => resolve(dataUrl);
-      img.src = dataUrl;
+      img.onerror = () => resolve(correctedUrl);
+      img.src = correctedUrl;
     });
   }
 

@@ -19,6 +19,7 @@ import { BodyViewType, BodyViewImage, UserBodyProfile, ImageQualityValidationRes
 import { ImageProcessingService } from '../../services/ImageProcessingService';
 import { StorageService } from '../../services/StorageService';
 import { useDelayedRender } from '../../hooks/useDelayedRender';
+import { correctImageOrientation } from '../../utils/canvasHelpers';
 
 interface BodyCaptureWizardProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface BodyCaptureWizardProps {
   userId: string;
   initialProfile: UserBodyProfile | null;
   onProfileSaved: (profile: UserBodyProfile) => void;
+  analyzeBodyPhoto?: (photoDataUrl: string) => Promise<any>;
 }
 
 export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
@@ -34,6 +36,7 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
   userId,
   initialProfile,
   onProfileSaved,
+  analyzeBodyPhoto,
 }) => {
   const [currentStepView, setCurrentStepView] = useState<BodyViewType>('front');
   const [capturedViews, setCapturedViews] = useState<{
@@ -127,14 +130,20 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        await processCapturedData(dataUrl);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const correctedUrl = await correctImageOrientation(file);
+      await processCapturedData(correctedUrl);
+    } catch (err) {
+      console.error('Orientation correction failed:', err);
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          await processCapturedData(dataUrl);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
     e.target.value = '';
   };
 
@@ -192,6 +201,13 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
       createdAt: initialProfile?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
+    // If front photo changed (first capture or update), trigger AI body analysis
+    const isFrontPhotoChanged = capturedViews.front &&
+      capturedViews.front.imageUrl !== initialProfile?.views?.front?.imageUrl;
+    if (isFrontPhotoChanged && analyzeBodyPhoto) {
+      analyzeBodyPhoto(capturedViews.front!.imageUrl);
+    }
 
     await StorageService.saveBodyProfile(profile);
     onProfileSaved(profile);
@@ -376,7 +392,7 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
                 <img
                   src={currentViewData.imageUrl}
                   alt={currentStepView}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
 
                 {/* Validation Badge */}

@@ -55,6 +55,7 @@ export const VirtualDressingRoom: React.FC<VirtualDressingRoomProps> = ({ onBack
     outfits,
     setActiveTab,
     selectedTryOnModelId,
+    analyzeBodyPhoto,
   } = useWardrobe();
 
   // Active perspective view
@@ -127,6 +128,11 @@ export const VirtualDressingRoom: React.FC<VirtualDressingRoomProps> = ({ onBack
       };
       setBodyProfile(initialProfile);
       StorageService.saveBodyProfile(initialProfile);
+
+      // Trigger AI body analysis if not already analyzed
+      if (!userProfile.bodyAnalysis && analyzeBodyPhoto) {
+        analyzeBodyPhoto(userProfile.uploadedTryOnPhoto);
+      }
     }
   }, [userProfile.uploadedTryOnPhoto, bodyProfile, userProfile.id]);
 
@@ -449,7 +455,7 @@ export const VirtualDressingRoom: React.FC<VirtualDressingRoomProps> = ({ onBack
                     key={`${activeAngle}-${activePhotoUrl?.substring(0, 50)}`}
                     src={showOriginalComparison ? originalUserPhoto : activePhotoUrl}
                     alt={`Virtual Try-On - ${activeAngle} view`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                     initial={{ opacity: 0, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}

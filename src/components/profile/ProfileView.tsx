@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useWardrobe } from '../../context/WardrobeContext';
 import { BodyCaptureWizard } from '../tryon/BodyCaptureWizard';
+import { UpdateBodyTypeModal } from './UpdateBodyTypeModal';
 import { ColorSchemePicker } from './ColorSchemePicker';
 import { StorageService } from '../../services/StorageService';
 import { UserBodyProfile } from '../../types';
@@ -66,6 +67,8 @@ export const ProfileView: React.FC = () => {
     logout,
     customTryOnPhoto,
     setCustomTryOnPhoto,
+    analyzeBodyPhoto,
+    isAnalyzingBody,
   } = useWardrobe();
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +85,10 @@ export const ProfileView: React.FC = () => {
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('Sparkles');
+  const [isBodyTypeModalOpen, setIsBodyTypeModalOpen] = useState(false);
+
+  const [heightCm, setHeightCm] = useState(userProfile.heightCm?.toString() || '');
+  const [weightKg, setWeightKg] = useState(userProfile.weightKg?.toString() || '');
 
   const favoriteItemsCount = wardrobe.filter((i) => i.isFavorite).length;
 
@@ -95,6 +102,20 @@ export const ProfileView: React.FC = () => {
   const handleSaveNotes = () => {
     updateUserProfile({ customNotes: customNotes.trim() });
     setIsEditingNotes(false);
+  };
+
+  const handleSaveHeight = () => {
+    const val = parseInt(heightCm);
+    if (!isNaN(val) && val > 50 && val < 250) {
+      updateUserProfile({ heightCm: val });
+    }
+  };
+
+  const handleSaveWeight = () => {
+    const val = parseInt(weightKg);
+    if (!isNaN(val) && val > 20 && val < 300) {
+      updateUserProfile({ weightKg: val });
+    }
   };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,6 +247,33 @@ export const ProfileView: React.FC = () => {
         </div>
 
         <div style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+          {/* AI Analyzing Banner */}
+          {isAnalyzingBody && (
+            <div
+              className="px-5 py-3 flex items-center gap-2.5"
+              style={{
+                backgroundColor: 'var(--md-primary-container)',
+                borderBottom: '1px solid var(--md-outline-variant)',
+              }}
+            >
+              <div className="relative flex items-center justify-center w-5 h-5">
+                <div
+                  className="absolute inset-0 rounded-full animate-ping"
+                  style={{ backgroundColor: 'var(--md-primary)', opacity: 0.3 }}
+                />
+                <Sparkles className="w-4 h-4 relative" style={{ color: 'var(--md-primary)' }} />
+              </div>
+              <div className="flex-1">
+                <span className="text-xs font-bold" style={{ color: 'var(--md-on-primary-container)' }}>
+                  AI is analyzing your body photo...
+                </span>
+                <span className="text-[10px] block" style={{ color: 'var(--md-on-primary-container)', opacity: 0.7 }}>
+                  Estimating height, weight, body type & styling rules
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Body Photos Row */}
           <button
             type="button"
@@ -263,6 +311,37 @@ export const ProfileView: React.FC = () => {
             </div>
             <ChevronRight className="w-4 h-4 shrink-0" style={{ color: 'var(--md-on-surface-variant)' }} />
           </button>
+
+          {/* AI Body Analysis Results */}
+          {userProfile.bodyAnalysis && (
+            <div className="px-5 py-3.5" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4" style={{ color: 'var(--md-tertiary)' }} />
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  AI Body Analysis
+                </span>
+                <span className="text-[10px] ml-auto" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  Last analyzed: {new Date(userProfile.bodyAnalysis.analyzedAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {userProfile.bodyAnalysis.stylingRules.map((rule, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-[11px]" style={{ color: 'var(--md-on-surface)' }}>
+                    <Check className="w-3 h-3 mt-0.5 shrink-0" style={{ color: 'var(--md-tertiary)' }} />
+                    <span>{rule}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBodyTypeModalOpen(true)}
+                className="mt-2.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors"
+                style={{ backgroundColor: 'var(--md-surface-container)', color: 'var(--md-primary)' }}
+              >
+                Update Body Type
+              </button>
+            </div>
+          )}
 
           {/* Name — Inline Edit */}
           <div className="px-5 py-3.5" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
@@ -305,6 +384,54 @@ export const ProfileView: React.FC = () => {
                 <Pencil className="w-3.5 h-3.5 transition-colors" style={{ color: 'var(--md-on-surface-variant)' }} />
               </button>
             )}
+          </div>
+
+          {/* Height & Weight */}
+          <div className="px-5 py-3.5" style={{ borderBottom: '1px solid var(--md-outline-variant)' }}>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  Height (cm)
+                </label>
+                <input
+                  type="number"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(e.target.value)}
+                  onBlur={handleSaveHeight}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveHeight()}
+                  placeholder="e.g. 172"
+                  min={50}
+                  max={250}
+                  className="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none md-elevation-1"
+                  style={{
+                    backgroundColor: 'var(--md-surface-container-high)',
+                    color: 'var(--md-on-surface)',
+                    caretColor: 'var(--md-primary)',
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  Weight (kg)
+                </label>
+                <input
+                  type="number"
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(e.target.value)}
+                  onBlur={handleSaveWeight}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveWeight()}
+                  placeholder="e.g. 70"
+                  min={20}
+                  max={300}
+                  className="w-full rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none md-elevation-1"
+                  style={{
+                    backgroundColor: 'var(--md-surface-container-high)',
+                    color: 'var(--md-on-surface)',
+                    caretColor: 'var(--md-primary)',
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Style Notes — Inline Edit */}
@@ -549,6 +676,7 @@ export const ProfileView: React.FC = () => {
         onClose={() => setIsBodyCaptureOpen(false)}
         userId={userProfile.id}
         initialProfile={bodyProfile}
+        analyzeBodyPhoto={analyzeBodyPhoto}
         onProfileSaved={(newProfile) => {
           setBodyProfile(newProfile);
           if (newProfile.views.front) {
@@ -556,6 +684,18 @@ export const ProfileView: React.FC = () => {
             updateUserProfile({ uploadedTryOnPhoto: newProfile.views.front.imageUrl });
           }
           setIsBodyCaptureOpen(false);
+        }}
+      />
+
+      {/* Update Body Type Modal */}
+      <UpdateBodyTypeModal
+        isOpen={isBodyTypeModalOpen}
+        onClose={() => setIsBodyTypeModalOpen(false)}
+        currentSex={userProfile.sex}
+        currentBodyType={userProfile.bodyType}
+        onSave={(sex, bodyType) => {
+          updateUserProfile({ sex, bodyType });
+          setIsBodyTypeModalOpen(false);
         }}
       />
     </div>

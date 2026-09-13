@@ -17,6 +17,7 @@ import {
 import { useWardrobe } from '../../context/WardrobeContext';
 import { ClothingClassification, SeasonSuitability } from '../../types';
 import { useDelayedRender } from '../../hooks/useDelayedRender';
+import { correctImageOrientation } from '../../utils/canvasHelpers';
 
 interface AddClothingModalProps {
   isOpen: boolean;
@@ -154,16 +155,22 @@ export const AddClothingModal: React.FC<AddClothingModalProps> = ({
     }
   };
 
-  const processImageFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        const dataUrl = event.target.result as string;
-        setImageUrl(dataUrl);
-        stopCameraStream();
-      }
-    };
-    reader.readAsDataURL(file);
+  const processImageFile = async (file: File) => {
+    try {
+      const correctedUrl = await correctImageOrientation(file);
+      setImageUrl(correctedUrl);
+      stopCameraStream();
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const dataUrl = event.target.result as string;
+          setImageUrl(dataUrl);
+          stopCameraStream();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleGalleryFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

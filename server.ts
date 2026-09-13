@@ -174,6 +174,165 @@ app.get('/api/weather', async (req, res) => {
   }
 });
 
+// Body Photo Analysis Endpoint — Gemini Vision
+app.post('/api/analyze-body', async (req, res) => {
+  try {
+    const { frontPhotoDataUrl } = req.body;
+    if (!frontPhotoDataUrl || typeof frontPhotoDataUrl !== 'string') {
+      return res.status(400).json({ error: 'frontPhotoDataUrl is required' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(200).json({
+        success: true,
+        engine: 'heuristic',
+        analysis: getHeuristicBodyAnalysis(),
+      });
+    }
+
+    // Extract base64 from data URL
+    const commaIdx = frontPhotoDataUrl.indexOf(',');
+    if (commaIdx === -1) {
+      return res.status(400).json({ error: 'Invalid data URL format' });
+    }
+    const base64Data = frontPhotoDataUrl.slice(commaIdx + 1);
+    const mimeType = frontPhotoDataUrl.slice(5, frontPhotoDataUrl.indexOf(';'));
+
+    const ai = getGenAI();
+
+    const prompt = `Analyze this full-body photograph for fashion styling purposes.
+Return a JSON object with these fields:
+
+1. estimatedHeightCm (number): Estimate the person's height in centimeters based on body proportions, limb ratios, and torso-to-leg ratio. Be realistic — most adults fall between 150-195cm.
+
+2. estimatedWeightKg (number): Estimate the person's weight in kilograms based on visible body mass, build, and proportions. Be realistic.
+
+3. sex (string): "male" or "female" based on visible physiological characteristics.
+
+4. bodyTypeCode (string): Classify into one of these body types:
+   Male: "01" Slender/Lean, "02" Soft/Round, "03" Athletic/V-Taper, "04" Standard/Average,
+         "05" Muscular/Broad, "06" Thick/Stocky, "07" Lean/Tall, "08" Large/Tall, "09" Extended Plus
+   Female: "10" Slender/Petite, "11" Soft/Curved, "12" Athletic/Toned, "13" Standard/Balanced,
+           "14" Muscular/Athletic, "15" Curvy/Hourglass, "16" Lean/Tall, "17" Full-Figured, "18" Maximum Plus
+
+5. bodyTypeLabel (string): The label for the selected code.
+
+6. bodyProportions (string): Describe torso-to-leg ratio, shoulder width relative to hips, waist definition, arm length, neck length. Be specific and factual.
+
+7. buildCategory (string): One of "slim", "average", "athletic", "broad", "heavy".
+
+8. stylingRules (string[]): 3-5 specific, actionable styling rules for this body. E.g.:
+   - "Wear structured blazers to broaden shoulder appearance"
+   - "High-rise bottoms elongate the leg line for your torso ratio"
+   - "Avoid oversized tops that hide your athletic frame"
+
+9. wardrobePriorities (string[]): 2-3 items. E.g. "Emphasize waist definition", "Add vertical lines for height", "Avoid bulk around midsection"`;
+
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let analysisResult: any = null;
+    let usedModel = '';
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [
+            { text: prompt },
+            { inlineData: { mimeType: mimeType || 'image/jpeg', data: base64Data } },
+          ],
+          config: {
+            systemInstruction: 'You are an expert fashion stylist and body proportion analyst. Return clean, structured JSON conforming to the schema.',
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                estimatedHeightCm: { type: Type.NUMBER },
+                estimatedWeightKg: { type: Type.NUMBER },
+                sex: { type: Type.STRING },
+                bodyTypeCode: { type: Type.STRING },
+                bodyTypeLabel: { type: Type.STRING },
+                bodyProportions: { type: Type.STRING },
+                buildCategory: { type: Type.STRING },
+                stylingRules: { type: Type.ARRAY, items: { type: Type.STRING } },
+                wardrobePriorities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              },
+              required: [
+                'estimatedHeightCm', 'estimatedWeightKg', 'sex', 'bodyTypeCode',
+                'bodyTypeLabel', 'bodyProportions', 'buildCategory', 'stylingRules', 'wardrobePriorities',
+              ],
+            },
+          },
+        });
+
+        const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) {
+          analysisResult = JSON.parse(text);
+          usedModel = model;
+          break;
+        }
+      } catch (err: any) {
+        console.warn(`Body analysis model ${model} failed:`, err.message?.substring(0, 80));
+        continue;
+      }
+    }
+
+    if (!analysisResult) {
+      return res.status(200).json({
+        success: true,
+        engine: 'heuristic-fallback',
+        analysis: getHeuristicBodyAnalysis(),
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      engine: usedModel,
+      analysis: {
+        heightCm: Math.round(analysisResult.estimatedHeightCm) || 172,
+        weightKg: Math.round(analysisResult.estimatedWeightKg) || 70,
+        sex: analysisResult.sex === 'female' ? 'female' : 'male',
+        bodyTypeCode: analysisResult.bodyTypeCode || '04',
+        bodyTypeLabel: analysisResult.bodyTypeLabel || 'Standard / Average',
+        bodyProportions: analysisResult.bodyProportions || 'Standard proportions',
+        buildCategory: analysisResult.buildCategory || 'average',
+        stylingRules: Array.isArray(analysisResult.stylingRules) ? analysisResult.stylingRules : [],
+        wardrobePriorities: Array.isArray(analysisResult.wardrobePriorities) ? analysisResult.wardrobePriorities : [],
+        analyzedAt: new Date().toISOString(),
+      },
+    });
+  } catch (error: any) {
+    console.error('Body analysis error:', error.message);
+    return res.status(200).json({
+      success: true,
+      engine: 'heuristic-error',
+      analysis: getHeuristicBodyAnalysis(),
+    });
+  }
+});
+
+function getHeuristicBodyAnalysis() {
+  return {
+    heightCm: 172,
+    weightKg: 70,
+    sex: 'male' as const,
+    bodyTypeCode: '04',
+    bodyTypeLabel: 'Standard / Average',
+    bodyProportions: 'Balanced proportions — standard torso-to-leg ratio, moderate shoulder width.',
+    buildCategory: 'average',
+    stylingRules: [
+      'Stick to well-fitted clothing that follows your natural body lines.',
+      'Use layering to add visual interest and structure.',
+      'Choose neutral tones with one accent color for a polished look.',
+    ],
+    wardrobePriorities: [
+      'Focus on fit over size — tailored pieces flatter most builds.',
+      'Add a structured jacket to elevate casual outfits.',
+    ],
+    analyzedAt: new Date().toISOString(),
+  };
+}
+
 // AI Outfit Recommendation Endpoint
 app.post('/api/recommend-outfit', async (req, res) => {
   try {
@@ -223,6 +382,7 @@ Requirements:
 - Select 1-2 complementary "Accessories" if available.
 - All 'selectedItemIds' MUST be valid IDs from the provided wardrobe list.
 - Tailor the styling advice, fabric drape, and silhouette recommendations to flatter the user's biological sex (${userPreferences?.sex || 'general'}) and specific body type silhouette (${userPreferences?.bodyType || 'standard build'}).
+- User Physical Profile: Height ${userPreferences?.heightCm || 'N/A'}cm, Weight ${userPreferences?.weightKg || 'N/A'}kg. Body proportions: ${userPreferences?.bodyProportions || 'Standard'}. Apply these personalized styling rules: ${Array.isArray(userPreferences?.stylingRules) ? userPreferences.stylingRules.join('; ') : 'Standard balanced styling'}.
 - Provide practical, fashion-forward styling advice, explaining why the outfit matches the weather, colors, and category.
 - Give a weather suitability score from 1 to 100.
 `;
@@ -430,6 +590,7 @@ Target Category / Occasion: "${category || 'Casual Wear'}"
 Current Weather:
 ${weather ? `- Location: ${weather.city}, Temp: ${weather.tempC}°C (Feels like ${weather.feelsLikeC}°C), Condition: ${weather.condition}, Rain: ${weather.rainChance}%` : '- Weather data not available'}
 User Context: ${JSON.stringify(userPreferences || {})}
+User Physical Profile: Height ${userPreferences?.heightCm || 'N/A'}cm, Weight ${userPreferences?.weightKg || 'N/A'}kg. Body proportions: ${userPreferences?.bodyProportions || 'Standard'}. Apply these personalized styling rules: ${Array.isArray(userPreferences?.stylingRules) ? userPreferences.stylingRules.join('; ') : 'Standard balanced styling'}.
 Extra Notes: "${occasionNotes || ''}"
 
 Available Wardrobe Items:
