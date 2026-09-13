@@ -129,8 +129,8 @@ export const VirtualDressingRoom: React.FC<VirtualDressingRoomProps> = ({ onBack
       setBodyProfile(initialProfile);
       StorageService.saveBodyProfile(initialProfile);
 
-      // Trigger AI body analysis if not already analyzed
-      if (!userProfile.bodyAnalysis && analyzeBodyPhoto) {
+      // Trigger AI body analysis
+      if (analyzeBodyPhoto && userProfile.uploadedTryOnPhoto) {
         analyzeBodyPhoto(userProfile.uploadedTryOnPhoto);
       }
     }
@@ -1130,10 +1130,11 @@ export const VirtualDressingRoom: React.FC<VirtualDressingRoomProps> = ({ onBack
         onClose={() => setIsBodyCaptureOpen(false)}
         userId={userProfile.id}
         initialProfile={bodyProfile}
+        analyzeBodyPhoto={analyzeBodyPhoto}
         onProfileSaved={(newProfile) => {
           setBodyProfile(newProfile);
           setIsBodyCaptureOpen(false);
-          setAngleComposites({}); // Clear cached composites since body photos changed
+          setAngleComposites({});
         }}
       />
     </div>

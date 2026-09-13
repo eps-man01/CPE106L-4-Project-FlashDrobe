@@ -50,6 +50,7 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentValidation, setCurrentValidation] = useState<ImageQualityValidationResult | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -188,31 +189,38 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
   };
 
   const handleSaveProfile = async () => {
-    const profile: UserBodyProfile = {
-      id: initialProfile?.id || `body_profile_${Date.now()}`,
-      userId,
-      views: capturedViews,
-      bodyMetrics: {
-        heightCm: 172,
-        generalProportions: 'Authentic user silhouette',
-        detectedAspect: capturedViews.front?.validation.aspectRatio || 1.45,
-      },
-      status: capturedViews.front ? 'ready' : 'incomplete',
-      createdAt: initialProfile?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    setIsSaving(true);
+    try {
+      const profile: UserBodyProfile = {
+        id: initialProfile?.id || `body_profile_${Date.now()}`,
+        userId,
+        views: capturedViews,
+        bodyMetrics: {
+          heightCm: 172,
+          generalProportions: 'Authentic user silhouette',
+          detectedAspect: capturedViews.front?.validation.aspectRatio || 1.45,
+        },
+        status: capturedViews.front ? 'ready' : 'incomplete',
+        createdAt: initialProfile?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    // If front photo changed (first capture or update), trigger AI body analysis
-    const isFrontPhotoChanged = capturedViews.front &&
-      capturedViews.front.imageUrl !== initialProfile?.views?.front?.imageUrl;
-    if (isFrontPhotoChanged && analyzeBodyPhoto) {
-      analyzeBodyPhoto(capturedViews.front!.imageUrl);
+      // If front photo changed (first capture or update), trigger AI body analysis
+      const isFrontPhotoChanged = capturedViews.front &&
+        capturedViews.front.imageUrl !== initialProfile?.views?.front?.imageUrl;
+      if (isFrontPhotoChanged && analyzeBodyPhoto) {
+        await analyzeBodyPhoto(capturedViews.front!.imageUrl);
+      }
+
+      await StorageService.saveBodyProfile(profile);
+      onProfileSaved(profile);
+      stopCamera();
+      onClose();
+    } catch (err) {
+      console.error('Failed to save body profile:', err);
+    } finally {
+      setIsSaving(false);
     }
-
-    await StorageService.saveBodyProfile(profile);
-    onProfileSaved(profile);
-    stopCamera();
-    onClose();
   };
 
   const [shouldRender, isExiting] = useDelayedRender(isOpen);
@@ -569,17 +577,26 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
             </button>
 
             <button
-              disabled={!hasFrontView || isAnalyzing}
+              disabled={!hasFrontView || isAnalyzing || isSaving}
               onClick={handleSaveProfile}
               className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
               style={{
-                backgroundColor: hasFrontView && !isAnalyzing ? 'var(--md-primary)' : 'var(--md-surface-container-highest)',
-                color: hasFrontView && !isAnalyzing ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
-                opacity: hasFrontView && !isAnalyzing ? 1 : 0.6,
+                backgroundColor: hasFrontView && !isAnalyzing && !isSaving ? 'var(--md-primary)' : 'var(--md-surface-container-highest)',
+                color: hasFrontView && !isAnalyzing && !isSaving ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
+                opacity: hasFrontView && !isAnalyzing && !isSaving ? 1 : 0.6,
               }}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Save & Open Dressing Room</span>
+              {isSaving ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Save & Open Dressing Room</span>
+                </>
+              )}
             </button>
           </div>
         </div>

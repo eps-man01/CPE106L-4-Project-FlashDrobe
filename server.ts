@@ -184,8 +184,9 @@ app.post('/api/analyze-body', async (req, res) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(200).json({
-        success: true,
+      return res.status(503).json({
+        success: false,
+        error: 'GEMINI_API_KEY not configured',
         engine: 'heuristic',
         analysis: getHeuristicBodyAnalysis(),
       });
@@ -211,12 +212,12 @@ Return a JSON object with these fields:
 3. sex (string): "male" or "female" based on visible physiological characteristics.
 
 4. bodyTypeCode (string): Classify into one of these body types:
-   Male: "01" Slender/Lean, "02" Soft/Round, "03" Athletic/V-Taper, "04" Standard/Average,
-         "05" Muscular/Broad, "06" Thick/Stocky, "07" Lean/Tall, "08" Large/Tall, "09" Extended Plus
-   Female: "10" Slender/Petite, "11" Soft/Curved, "12" Athletic/Toned, "13" Standard/Balanced,
-           "14" Muscular/Athletic, "15" Curvy/Hourglass, "16" Lean/Tall, "17" Full-Figured, "18" Maximum Plus
+   Male: "01" Slender / Lean, "02" Slim / Athletic-Lean, "03" Athletic / V-Taper, "04" Standard / Average,
+         "05" Solid / Broad Frame, "06" Sturdy / Robust, "07" Heavy / Stocky, "08" Full / Plus Size, "09" Extended Plus
+   Female: "10" Slender / Petite, "11" Slim / Subtle Curve, "12" Classic / Balanced, "13" Moderate / Soft Curve,
+           "14" Midsize / Curvaceous, "15" Full-Figured / Hourglass-Plus, "16" Plus / Voluptuous, "17" Extended Full, "18" Maximum Plus
 
-5. bodyTypeLabel (string): The label for the selected code.
+5. bodyTypeLabel (string): The exact label for the selected code as shown above (e.g. "Slim / Athletic-Lean", not a custom label).
 
 6. bodyProportions (string): Describe torso-to-leg ratio, shoulder width relative to hips, waist definition, arm length, neck length. Be specific and factual.
 
@@ -229,7 +230,7 @@ Return a JSON object with these fields:
 
 9. wardrobePriorities (string[]): 2-3 items. E.g. "Emphasize waist definition", "Add vertical lines for height", "Avoid bulk around midsection"`;
 
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    const modelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
     let analysisResult: any = null;
     let usedModel = '';
 
@@ -242,7 +243,7 @@ Return a JSON object with these fields:
             { inlineData: { mimeType: mimeType || 'image/jpeg', data: base64Data } },
           ],
           config: {
-            systemInstruction: 'You are an expert fashion stylist and body proportion analyst. Return clean, structured JSON conforming to the schema.',
+            systemInstruction: 'You are an expert fashion stylist and body proportion analyst. Return clean, structured JSON conforming to the schema. For bodyTypeCode, you MUST use exactly one of the codes provided in the prompt (e.g. "01" through "18"). For bodyTypeLabel, you MUST use the exact label text shown next to that code in the prompt — do not invent or modify labels.',
             responseMimeType: 'application/json',
             responseSchema: {
               type: Type.OBJECT,
@@ -278,12 +279,29 @@ Return a JSON object with these fields:
     }
 
     if (!analysisResult) {
-      return res.status(200).json({
-        success: true,
+      return res.status(502).json({
+        success: false,
+        error: 'All Gemini models failed',
         engine: 'heuristic-fallback',
         analysis: getHeuristicBodyAnalysis(),
       });
     }
+
+    // Validate bodyTypeCode against known codes
+    const validCodes = ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18'];
+    const validCodeMap: Record<string, string> = {
+      '01': 'Slender / Lean', '02': 'Slim / Athletic-Lean', '03': 'Athletic / V-Taper', '04': 'Standard / Average',
+      '05': 'Solid / Broad Frame', '06': 'Sturdy / Robust', '07': 'Heavy / Stocky', '08': 'Full / Plus Size', '09': 'Extended Plus',
+      '10': 'Slender / Petite', '11': 'Slim / Subtle Curve', '12': 'Classic / Balanced', '13': 'Moderate / Soft Curve',
+      '14': 'Midsize / Curvaceous', '15': 'Full-Figured / Hourglass-Plus', '16': 'Plus / Voluptuous', '17': 'Extended Full', '18': 'Maximum Plus',
+    };
+
+    let bodyCode = analysisResult.bodyTypeCode || '04';
+    if (!validCodes.includes(bodyCode)) {
+      bodyCode = '04';
+    }
+    // Always use the authoritative label from our mapping, ignoring Gemini's label
+    const bodyLabel = validCodeMap[bodyCode] || 'Standard / Average';
 
     return res.status(200).json({
       success: true,
@@ -292,8 +310,8 @@ Return a JSON object with these fields:
         heightCm: Math.round(analysisResult.estimatedHeightCm) || 172,
         weightKg: Math.round(analysisResult.estimatedWeightKg) || 70,
         sex: analysisResult.sex === 'female' ? 'female' : 'male',
-        bodyTypeCode: analysisResult.bodyTypeCode || '04',
-        bodyTypeLabel: analysisResult.bodyTypeLabel || 'Standard / Average',
+        bodyTypeCode: bodyCode,
+        bodyTypeLabel: bodyLabel,
         bodyProportions: analysisResult.bodyProportions || 'Standard proportions',
         buildCategory: analysisResult.buildCategory || 'average',
         stylingRules: Array.isArray(analysisResult.stylingRules) ? analysisResult.stylingRules : [],
@@ -303,8 +321,9 @@ Return a JSON object with these fields:
     });
   } catch (error: any) {
     console.error('Body analysis error:', error.message);
-    return res.status(200).json({
-      success: true,
+    return res.status(500).json({
+      success: false,
+      error: 'Body analysis failed',
       engine: 'heuristic-error',
       analysis: getHeuristicBodyAnalysis(),
     });
@@ -387,7 +406,7 @@ Requirements:
 - Give a weather suitability score from 1 to 100.
 `;
 
-      const outfitModelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      const outfitModelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
       let response: any = null;
 
       for (const model of outfitModelsToTry) {
@@ -606,7 +625,7 @@ Requirements:
 - All selectedItemIds MUST be valid IDs from the provided wardrobe.
 - Return structured JSON with the schema below.`;
 
-      const outfitModelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      const outfitModelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
       let response: any = null;
 
       for (const model of outfitModelsToTry) {
@@ -781,7 +800,7 @@ Evaluate:
 6. 2-3 Actionable Tailoring / Styling adjustments (e.g. tucking tops, rolling sleeves, belt accentuation, pant break).
 7. Overall Style Vibe (e.g. "Effortless Parisian Minimalist", "Structured Modern Executive").`;
 
-      const tryOnModelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      const tryOnModelsToTry = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
       let aiResponse: any = null;
 
       for (const model of tryOnModelsToTry) {
@@ -950,7 +969,7 @@ app.post('/api/virtual-try-on/generate', async (req, res) => {
       try {
         const ai = getGenAI();
 
-        const textModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+        const textModels = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
         const analysisPrompt = `You are Flashdrobe's Virtual Dressing Room AI stylist.
 The user is trying on these garments:
 ${garmentList}
@@ -1016,7 +1035,7 @@ Provide a brief fit analysis as JSON:
     if (!generatedImageUrl && userImageBase64) {
       try {
         console.log('Trying Gemini Nano Banana image generation...');
-        const geminiImageModels = ['gemini-2.5-flash-image'];
+        const geminiImageModels = ['gemini-3.1-flash-image'];
         const geminiImageAi = getGenAI();
 
         // Extract the target garment image for try-on

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, Sparkles } from 'lucide-react';
 import { BiologicalSex, BodyTypeInfo } from '../../types';
 import { getBodyTypesForSex } from '../../data/bodyTypes';
@@ -26,6 +26,15 @@ export const UpdateBodyTypeModal: React.FC<UpdateBodyTypeModalProps> = ({
     if (currentBodyType) return currentBodyType;
     return getBodyTypesForSex(initialSex)[3];
   });
+
+  // Sync state with props when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const newSex: BiologicalSex = currentSex === 'female' ? 'female' : 'male';
+      setSex(newSex);
+      setSelectedBodyType(currentBodyType || getBodyTypesForSex(newSex)[3]);
+    }
+  }, [isOpen, currentBodyType, currentSex]);
 
   const [shouldRender, isExiting] = useDelayedRender(isOpen);
 

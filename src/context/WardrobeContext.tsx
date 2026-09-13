@@ -196,7 +196,12 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Load profile from Firestore
         const existingProfile = await FirestoreService.loadUserProfile(user.uid);
         if (existingProfile) {
-          setUserProfile((prev) => ({ ...existingProfile, uploadedTryOnPhoto: prev.uploadedTryOnPhoto }));
+          setUserProfile((prev) => ({
+            ...existingProfile,
+            uploadedTryOnPhoto: prev.uploadedTryOnPhoto,
+            bodyType: existingProfile.bodyType || prev.bodyType,
+            bodyAnalysis: existingProfile.bodyAnalysis || prev.bodyAnalysis,
+          }));
         } else {
           // New user — create profile from Google account
           const newProfile: UserProfile = {
