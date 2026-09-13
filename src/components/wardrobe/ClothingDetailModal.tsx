@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   X,
   Heart,
@@ -40,9 +40,15 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
 
   const [shouldRender, isExiting] = useDelayedRender(!!item);
 
-  if (!shouldRender) return null;
+  // Retain last valid item for exit animation rendering
+  const lastItemRef = useRef(item);
+  if (item) lastItemRef.current = item;
+  const displayItem = item || lastItemRef.current;
+
+  if (!shouldRender || !displayItem) return null;
 
   const handleSaveEdit = () => {
+    if (!item) return;
     updateClothingItem(item.id, {
       name: name.trim() || item.name,
       subType: subType.trim() || item.subType,
@@ -54,7 +60,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
 
   const handleAddTag = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTag.trim()) return;
+    if (!item || !newTag.trim()) return;
     const formatted = newTag.startsWith('#')
       ? newTag.trim().toLowerCase()
       : `#${newTag.trim().toLowerCase()}`;
@@ -67,12 +73,14 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
+    if (!item) return;
     updateClothingItem(item.id, {
       tags: item.tags.filter((t) => t !== tagToRemove),
     });
   };
 
   const handleDelete = () => {
+    if (!item) return;
     if (confirm(`Are you sure you want to remove "${item.name}" from your wardrobe?`)) {
       deleteClothingItem(item.id);
       onClose();
@@ -96,8 +104,8 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
           style={{ backgroundColor: 'var(--md-surface-container)' }}
         >
           <img
-            src={item.imageUrl}
-            alt={item.name}
+            src={displayItem.imageUrl}
+            alt={displayItem.name}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30"></div>
@@ -108,17 +116,17 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
               className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-bold border"
               style={{ color: 'var(--md-primary)', borderColor: 'var(--md-outline-variant)' }}
             >
-              {item.classification}
+              {displayItem.classification}
             </span>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => toggleFavoriteItem(item.id)}
+                onClick={() => item && toggleFavoriteItem(item.id)}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-md hover:text-rose-500 transition-colors border"
                 style={{ color: 'var(--md-on-surface)', borderColor: 'var(--md-outline-variant)' }}
               >
                 <Heart
                   className={`w-4 h-4 ${
-                    item.isFavorite ? 'fill-rose-500 text-rose-500' : ''
+                    displayItem.isFavorite ? 'fill-rose-500 text-rose-500' : ''
                   }`}
                 />
               </button>
@@ -135,10 +143,10 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
           {/* Item Name Overlay */}
           <div className="absolute bottom-3 inset-x-4">
             <span className="text-[11px] text-amber-200 font-extrabold tracking-wider uppercase drop-shadow-sm">
-              {item.subType} {item.brand ? `• ${item.brand}` : ''}
+              {displayItem.subType} {displayItem.brand ? `• ${displayItem.brand}` : ''}
             </span>
             <h2 className="text-lg font-extrabold text-white leading-tight drop-shadow-sm">
-              {item.name}
+              {displayItem.name}
             </h2>
           </div>
         </div>
@@ -148,6 +156,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
           {/* Virtual Try-On Banner Action */}
           <button
             onClick={() => {
+              if (!item) return;
               openVirtualTryOn([item.id], item.name);
               onClose();
             }}
@@ -168,7 +177,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
                 <Thermometer className="w-3.5 h-3.5 text-amber-600" />
                 <span className="text-[10px] uppercase font-bold">Warmth</span>
               </div>
-              <p className="text-xs font-extrabold" style={{ color: 'var(--md-on-surface)' }}>{item.warmthLevel} / 5</p>
+              <p className="text-xs font-extrabold" style={{ color: 'var(--md-on-surface)' }}>{displayItem.warmthLevel} / 5</p>
             </div>
 
             <div
@@ -180,7 +189,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
                 <span className="text-[10px] uppercase font-bold">Weather</span>
               </div>
               <p className="text-xs font-extrabold truncate" style={{ color: 'var(--md-on-surface)' }}>
-                {item.seasonSuitability}
+                {displayItem.seasonSuitability}
               </p>
             </div>
 
@@ -192,7 +201,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
                 <Calendar className="w-3.5 h-3.5 text-[#6b7c59]" />
                 <span className="text-[10px] uppercase font-bold">Worn</span>
               </div>
-              <p className="text-xs font-extrabold" style={{ color: 'var(--md-on-surface)' }}>{item.wearCount} times</p>
+              <p className="text-xs font-extrabold" style={{ color: 'var(--md-on-surface)' }}>{displayItem.wearCount} times</p>
             </div>
           </div>
 
@@ -204,15 +213,15 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
             <div className="flex items-center space-x-2.5">
               <div
                 className="w-6 h-6 rounded-full border-2 border-white shadow"
-                style={{ backgroundColor: item.color }}
+                style={{ backgroundColor: displayItem.color }}
               />
               <div>
                 <p className="text-xs font-bold" style={{ color: 'var(--md-on-surface)' }}>Color Palette</p>
-                <p className="text-[11px] font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{item.colorName}</p>
+                <p className="text-[11px] font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{displayItem.colorName}</p>
               </div>
             </div>
             <button
-              onClick={() => markItemWorn(item.id)}
+              onClick={() => item && markItemWorn(item.id)}
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all"
               style={{ backgroundColor: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)', borderColor: 'var(--md-outline-variant)' }}
             >
@@ -296,7 +305,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
                 className="text-xs p-3 rounded-2xl border italic"
                 style={{ color: 'var(--md-on-surface-variant)', backgroundColor: 'var(--md-surface-container)', borderColor: 'var(--md-outline-variant)' }}
               >
-                {item.notes || 'No custom notes added for this item.'}
+                {displayItem.notes || 'No custom notes added for this item.'}
               </p>
             </div>
           )}
@@ -307,7 +316,7 @@ export const ClothingDetailModal: React.FC<ClothingDetailModalProps> = ({ item, 
               Assigned Category Tags
             </span>
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {item.tags.map((tag) => (
+              {displayItem.tags.map((tag) => (
                 <span
                   key={tag}
                   className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full border text-xs font-semibold"

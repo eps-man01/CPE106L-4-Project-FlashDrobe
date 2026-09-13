@@ -40,10 +40,12 @@ interface WardrobeContextType {
   setActiveTab: (tab: ActiveTab) => void;
   // Virtual Try-On
   tryOnItemIds: string[];
-  setTryOnItemIds: (ids: string[]) => void;
+  setTryOnItemIds: (ids: string[] | ((prev: string[]) => string[])) => void;
   selectedTryOnModelId: string;
   setSelectedTryOnModelId: (id: string) => void;
   openVirtualTryOn: (itemIds?: string[], outfitTitle?: string) => void;
+  shouldOpenDressingRoom: boolean;
+  setShouldOpenDressingRoom: (val: boolean) => void;
   uploadCustomTryOnPhoto: (photoBase64: string) => void;
   customTryOnPhoto: string | null;
   setCustomTryOnPhoto: (photo: string | null) => void;
@@ -166,6 +168,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedTryOnModelId, setSelectedTryOnModelId] = useState<string>(() => {
     return userProfile.sex === 'female' ? 'model_fem_01' : 'model_male_01';
   });
+
+  const [shouldOpenDressingRoom, setShouldOpenDressingRoom] = useState(false);
 
   // AI generation state
   const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
@@ -302,6 +306,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (itemIds && itemIds.length > 0) {
       setTryOnItemIds(itemIds);
     }
+    setShouldOpenDressingRoom(true);
     setActiveTab('tryon');
   }, []);
 
@@ -642,6 +647,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         selectedTryOnModelId,
         setSelectedTryOnModelId,
         openVirtualTryOn,
+        shouldOpenDressingRoom,
+        setShouldOpenDressingRoom,
         uploadCustomTryOnPhoto,
         customTryOnPhoto: userProfile.uploadedTryOnPhoto || null,
         setCustomTryOnPhoto: (photo: string | null) =>

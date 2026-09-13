@@ -37,6 +37,8 @@ export const VirtualTryOnView: React.FC = () => {
     isGeneratingRecommendations,
     generateRecommendations,
     swapItemInRecommendation,
+    shouldOpenDressingRoom,
+    setShouldOpenDressingRoom,
   } = useWardrobe();
   const { isOnline } = useConnectivity();
 
@@ -117,6 +119,14 @@ export const VirtualTryOnView: React.FC = () => {
       wasOfflineRef.current = true;
     }
   }, [isOnline, recommendations.length, isGeneratingRecommendations, handleGenerateRecommendations]);
+
+  // Auto-open Dressing Room when arriving from external "Try On" buttons
+  useEffect(() => {
+    if (shouldOpenDressingRoom) {
+      setMainScreenMode('dressing-room');
+      setShouldOpenDressingRoom(false);
+    }
+  }, [shouldOpenDressingRoom, setShouldOpenDressingRoom]);
 
   // Handle swap item in recommendation
   const handleSwapItemInRec = useCallback(
@@ -441,10 +451,11 @@ export const VirtualTryOnView: React.FC = () => {
       {/* Fit Analysis Modal */}
       <FitAnalysisModal
         isOpen={showFitAnalysis && !!fitAnalysisResult}
-        result={fitAnalysisResult!}
+        result={fitAnalysisResult}
         onClose={() => {
           setShowFitAnalysis(false);
-          setFitAnalysisResult(null);
+          // Delay nullifying result to avoid exit-animation race condition
+          setTimeout(() => setFitAnalysisResult(null), 300);
         }}
         onReEvaluate={handleReEvaluateFit}
         isReEvaluating={isLoadingFitAnalysis}

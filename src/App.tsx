@@ -10,6 +10,7 @@ import { SavedOutfitsView } from './components/favorites/SavedOutfitsView';
 import { ProfileView } from './components/profile/ProfileView';
 import { VirtualTryOnView } from './components/tryon/VirtualTryOnView';
 import { AuthScreen } from './components/auth/AuthScreen';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useDeviceLayout } from './hooks/useDeviceLayout';
 import { useColorScheme } from './hooks/useColorScheme';
 import { Loader2, WifiOff } from 'lucide-react';
@@ -208,7 +209,9 @@ export default function App() {
     <ConnectivityProvider>
       <ConnectivityGate>
         <WardrobeProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </WardrobeProvider>
       </ConnectivityGate>
     </ConnectivityProvider>
