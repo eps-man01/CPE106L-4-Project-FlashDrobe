@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { X, ShieldCheck, Scissors, RefreshCw } from 'lucide-react';
 import { VirtualTryOnResult } from '../../types';
 import { useDelayedRender } from '../../hooks/useDelayedRender';
 
 interface FitAnalysisModalProps {
   isOpen: boolean;
-  result: VirtualTryOnResult;
+  result: VirtualTryOnResult | null;
   onClose: () => void;
   onReEvaluate: () => void;
   isReEvaluating: boolean;
@@ -20,7 +20,12 @@ export const FitAnalysisModal: React.FC<FitAnalysisModalProps> = ({
 }) => {
   const [shouldRender, isExiting] = useDelayedRender(isOpen);
 
-  if (!shouldRender) return null;
+  // Retain last valid result for exit animation rendering
+  const lastResultRef = useRef(result);
+  if (result) lastResultRef.current = result;
+  const displayResult = result || lastResultRef.current;
+
+  if (!shouldRender || !displayResult) return null;
 
   return (
     <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm ${isExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`} style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
@@ -46,17 +51,17 @@ export const FitAnalysisModal: React.FC<FitAnalysisModalProps> = ({
             <span className="text-xs font-bold text-stone-600">Overall Fit Score</span>
             <div className="flex items-center space-x-1 px-3 py-1 rounded-xl bg-[#eef3e8] border border-[#cfdec3] text-[#4d663b]">
               <ShieldCheck className="w-3.5 h-3.5 text-[#5e7d48]" />
-              <span className="text-sm font-black">{result.fitScore}%</span>
+              <span className="text-sm font-black">{displayResult.fitScore}%</span>
             </div>
           </div>
 
           {/* Style Vibe */}
-          {result.styleVibe && (
+          {displayResult.styleVibe && (
             <div className="bg-[#fbf9f5] border border-[#eee9df] rounded-2xl p-3">
               <span className="text-[10px] font-bold text-[#8c5836] uppercase tracking-wider block mb-1">
                 Style Vibe
               </span>
-              <p className="text-xs font-bold text-stone-900">{result.styleVibe}</p>
+              <p className="text-xs font-bold text-stone-900">{displayResult.styleVibe}</p>
             </div>
           )}
 
@@ -66,7 +71,7 @@ export const FitAnalysisModal: React.FC<FitAnalysisModalProps> = ({
               Silhouette Analysis
             </span>
             <p className="text-xs text-stone-700 leading-relaxed bg-[#fbf9f5] p-3 rounded-2xl border border-[#eee9df]">
-              {result.silhouetteAnalysis}
+              {displayResult.silhouetteAnalysis}
             </p>
           </div>
 
@@ -75,17 +80,17 @@ export const FitAnalysisModal: React.FC<FitAnalysisModalProps> = ({
             <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block">
               Proportion Harmony
             </span>
-            <p className="text-xs text-stone-600">{result.proportionsFeedback}</p>
+            <p className="text-xs text-stone-600">{displayResult.proportionsFeedback}</p>
           </div>
 
           {/* Garment Breakdown */}
-          {result.garmentBreakdown && result.garmentBreakdown.length > 0 && (
+          {displayResult.garmentBreakdown && displayResult.garmentBreakdown.length > 0 && (
             <div className="space-y-2">
               <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider block">
                 Garment Breakdown
               </span>
               <div className="space-y-1.5">
-                {result.garmentBreakdown.map((g, idx) => (
+                {displayResult.garmentBreakdown.map((g, idx) => (
                   <div key={idx} className="bg-stone-50 border border-[#e7e2d9] rounded-xl p-2.5">
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="text-[10px] font-bold text-[#8c5836] uppercase">{g.classification}</span>
@@ -102,18 +107,18 @@ export const FitAnalysisModal: React.FC<FitAnalysisModalProps> = ({
           {/* Body Type Flatter Rating */}
           <div className="flex items-center justify-between bg-[#fbf9f5] border border-[#eee9df] rounded-xl p-3">
             <span className="text-xs font-bold text-stone-700">Body Type Flattery</span>
-            <span className="text-sm font-black text-[#4d663b]">{result.bodyTypeFlatterRating}/100</span>
+            <span className="text-sm font-black text-[#4d663b]">{displayResult.bodyTypeFlatterRating}/100</span>
           </div>
 
           {/* Tailoring Advice */}
-          {result.tailoringAdvice && result.tailoringAdvice.length > 0 && (
+          {displayResult.tailoringAdvice && displayResult.tailoringAdvice.length > 0 && (
             <div className="space-y-1.5 pt-2 border-t border-[#eee9df]">
               <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider flex items-center space-x-1">
                 <Scissors className="w-3 h-3 text-[#8c5836]" />
                 <span>Tailoring Adjustments</span>
               </span>
               <ul className="space-y-1 text-xs text-stone-600 list-disc list-inside">
-                {result.tailoringAdvice.map((tip, idx) => (
+                {displayResult.tailoringAdvice.map((tip, idx) => (
                   <li key={idx} className="leading-snug">
                     <span className="text-stone-800">{tip}</span>
                   </li>

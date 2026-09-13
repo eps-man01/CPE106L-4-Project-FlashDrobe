@@ -64,12 +64,23 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
     };
   }, []);
 
+  // Attach stream to video element once it mounts after isCameraActive flips to true
+  useEffect(() => {
+    if (isCameraActive && streamRef.current && videoRef.current && !videoRef.current.srcObject) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isCameraActive]);
+
   const startCamera = async () => {
     setCameraError(null);
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
+      // Set state FIRST so the <video> element renders and ref becomes available
+      setIsCameraActive(true);
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
@@ -79,11 +90,12 @@ export const BodyCaptureWizard: React.FC<BodyCaptureWizardProps> = ({
         audio: false,
       });
       streamRef.current = stream;
+
+      // Attach stream after render — ref is now valid
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.play().catch(() => {});
       }
-      setIsCameraActive(true);
     } catch (err: any) {
       console.warn('Camera access denied or unavailable:', err);
       setCameraError('Camera access not granted or unavailable. You can upload photographs directly.');

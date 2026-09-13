@@ -41,6 +41,11 @@ export const WardrobeView: React.FC = () => {
   const [addModalMode, setAddModalMode] = useState<'camera' | 'upload'>('camera');
   const [selectedItemForDetail, setSelectedItemForDetail] = useState<ClothingItem | null>(null);
 
+  const currentItemForDetail = useMemo(() => {
+    if (!selectedItemForDetail) return null;
+    return wardrobe.find((w) => w.id === selectedItemForDetail.id) || selectedItemForDetail;
+  }, [wardrobe, selectedItemForDetail]);
+
   const openAddWithMode = (mode: 'camera' | 'upload') => {
     setAddModalMode(mode);
     setIsAddModalOpen(true);
@@ -431,12 +436,12 @@ export const WardrobeView: React.FC = () => {
       />
 
       <ClothingDetailModal
-        item={selectedItemForDetail}
+        item={currentItemForDetail}
         onClose={() => setSelectedItemForDetail(null)}
       />
 
       {/* Delete Confirmation Dialog */}
-      {shouldRenderDelete && (
+      {shouldRenderDelete && itemToDelete && (
         <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm ${isDeleteExiting ? 'animate-md-fade-out' : 'animate-in fade-in duration-150'}`} style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
           <div className={`rounded-3xl p-5 max-w-sm w-full md-elevation-5 space-y-4 ${isDeleteExiting ? 'animate-md-exit' : 'animate-md-sheet'}`} style={{ backgroundColor: 'var(--md-surface-container-lowest)' }}>
             <div className="flex items-center gap-3">
